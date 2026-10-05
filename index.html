@@ -79,14 +79,13 @@
 
     <script>
         // --- KONFIGURASI CLOUDFLARE WORKER API ---
-        // Nanti ganti string kosong ini dengan URL Cloudflare Worker kamu
-        // Contoh: 'https://roster-api.username.workers.dev'
         const API_URL = "https://roster-api.team-id.workers.dev";
 
         // --- GLOBAL STATE ---
         const state = {
             currentUser: null,
             view: 'login', // 'login', 'leaderboard', 'submit', 'admin'
+            currentStage: 'Qualifier', // State baru untuk tracking dropdown Stage
             players: [],
             beatmaps: [],
             scores: [] 
@@ -115,9 +114,15 @@
             }, 3000);
         }
 
+        // FUNGSI BARU: Mengubah Stage yang sedang dilihat
+        window.changeStage = function(stage) {
+            state.currentStage = stage;
+            renderApp();
+        }
+
         // --- DATABASE FETCH (CLOUDFLARE) ---
         async function fetchDatabase() {
-            if (!API_URL) return; // Jika belum diset, gunakan memory lokal
+            if (!API_URL) return; 
             try {
                 const response = await fetch(`${API_URL}/data`);
                 if(response.ok) {
@@ -194,22 +199,23 @@
             showToast('Player berhasil dihapus!', 'success');
         }
 
-        window.addBeatmap = async function(mod, name) {
+        // UPDATE: Menambahkan parameter stage
+        window.addBeatmap = async function(stage, mod, name) {
             if (!name.trim()) return showToast('Nama beatmap tidak boleh kosong!', 'error');
             if(API_URL) {
                 await fetch(`${API_URL}/beatmaps`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({mod, name}) 
+                    body: JSON.stringify({stage, mod, name}) 
                 });
                 await fetchDatabase();
             } else {
-                state.beatmaps.push({ id: window.generateId(), mod, name });
+                state.beatmaps.push({ id: window.generateId(), stage, mod, name });
                 const modOrder = {'NM':1, 'HD':2, 'HR':3, 'DT':4, 'MM':5, 'TB':6};
                 state.beatmaps.sort((a,b) => modOrder[a.mod] - modOrder[b.mod] || a.name.localeCompare(b.name));
                 renderApp();
             }
-            showToast('Beatmap berhasil ditambahkan!', 'success');
+            showToast(`Beatmap berhasil ditambahkan ke ${stage}!`, 'success');
         }
 
         window.removeBeatmap = async function(beatmapId) {
@@ -247,7 +253,6 @@
                 const score = Number(value);
                 if (isNaN(score) || score <= 0) continue;
 
-                // key format: score_mapId or score_mapId_subMod
                 const parts = key.split('_');
                 const mapId = parts[1];
                 const subMod = parts[2] || null;
@@ -283,19 +288,19 @@
             }
         }
 
-        // --- DATA PROCESSING (Menyesuaikan dengan struktur baru) ---
-        function getLeaderboardData() {
+        // --- DATA PROCESSING ---
+        // UPDATE: Hanya memproses map dari stage yang dipilih
+        function getLeaderboardData(currentStageMaps) {
             const playerList = state.players.filter(p => p.role === 'player');
             const mapStats = {}; 
             
-            state.beatmaps.forEach(map => {
+            currentStageMaps.forEach(map => {
                 const subMods = map.mod === 'MM' ? ['NM', 'HD', 'HR'] : [null];
                 subMods.forEach(subMod => {
                     const mapKey = subMod ? `${map.id}_${subMod}` : map.id;
                     mapStats[mapKey] = [];
                     
                     playerList.forEach(player => {
-                        // Ambil semua run untuk player dan map ini
                         const playerRuns = state.scores.filter(s => s.player_id === player.id && s.map_key === mapKey);
                         
                         let avg = null;
@@ -313,7 +318,6 @@
                 });
             });
 
-            // Kalkulasi Placements
             const rankings = playerList.map(player => {
                 let sumPlacements = 0;
                 let sumScores = 0;
@@ -432,10 +436,12 @@
         }
 
         function renderLeaderboard() {
-            const data = getLeaderboardData();
+            // Filter map sesuai stage yang sedang dipilih
+            const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === state.currentStage);
+            const data = getLeaderboardData(currentStageMaps);
             
             let mapHeaders = '';
-            state.beatmaps.forEach(map => {
+            currentStageMaps.forEach(map => {
                 if (map.mod === 'MM') {
                     mapHeaders += `
                         <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} NM</th>
@@ -456,7 +462,7 @@
 
             let rows = data.rankings.map((player, index) => {
                 let mapCells = '';
-                state.beatmaps.forEach(map => {
+                currentStageMaps.forEach(map => {
                     const subMods = map.mod === 'MM' ? ['NM', 'HD', 'HR'] : [null];
                     subMods.forEach(subMod => {
                         const mapKey = subMod ? `${map.id}_${subMod}` : map.id;
@@ -500,7 +506,15 @@
             return `
                 <div class="fade-in w-full">
                     <div class="flex flex-col mb-5">
-                        <h2 class="text-3xl font-bold text-white mb-1 uppercase tracking-tight">QUALIFIER - PLAYER SCORES</h2>
+                        <select onchange="window.changeStage(this.value)" class="bg-transparent text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit">
+                            <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>QUALIFIER - PLAYER SCORES ▾</option>
+                            <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>RO32 - PLAYER SCORES ▾</option>
+                            <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>RO16 - PLAYER SCORES ▾</option>
+                            <option value="Semi Final" class="bg-slate-900 text-base" ${state.currentStage === 'Semi Final' ? 'selected' : ''}>SEMI FINAL - PLAYER SCORES ▾</option>
+                            <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>FINAL - PLAYER SCORES ▾</option>
+                            <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>GRAND FINAL - PLAYER SCORES ▾</option>
+                        </select>
+                        <p class="text-slate-400 text-sm">Peringkat didasarkan pada <b class="text-slate-200">Avg. Sum of Placements</b> terkecil di stage ini.</p>
                     </div>
                     
                     <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
@@ -526,11 +540,13 @@
         }
 
         function renderSubmitScore() {
+            // Filter map sesuai stage yang sedang dipilih
+            const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === state.currentStage);
             const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
             let tableRows = '';
 
             modOrder.forEach(mod => {
-                const maps = state.beatmaps.filter(b => b.mod === mod);
+                const maps = currentStageMaps.filter(b => b.mod === mod);
                 if (maps.length === 0) return;
 
                 let modColor = 'text-white';
@@ -589,13 +605,23 @@
                 });
             });
 
+            // Tampilkan pesan kosong jika stage tersebut belum punya map
+            if (tableRows === '') {
+                tableRows = `<tr><td colspan="2" class="px-6 py-8 text-center text-slate-500">Belum ada map terdaftar di stage ini.</td></tr>`;
+            }
+
             return `
                 <div class="fade-in max-w-4xl mx-auto w-full">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
-                        <div>
-                            <h2 class="text-3xl font-bold text-white mb-2">Form Submission Score (Run)</h2>
-                            <p class="text-slate-400 text-sm">Isi skor pada map yang dimainkan. Submit beberapa kali pada map yang sama akan dihitung <b>rata-ratanya</b>.</p>
-                        </div>
+                    <div class="flex flex-col mb-6">
+                        <select onchange="window.changeStage(this.value)" class="bg-transparent text-3xl font-bold text-white mb-1 appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit">
+                            <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>Form Submission: QUALIFIER ▾</option>
+                            <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>Form Submission: RO32 ▾</option>
+                            <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>Form Submission: RO16 ▾</option>
+                            <option value="Semi Final" class="bg-slate-900 text-base" ${state.currentStage === 'Semi Final' ? 'selected' : ''}>Form Submission: SEMI FINAL ▾</option>
+                            <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>Form Submission: FINAL ▾</option>
+                            <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>Form Submission: GRAND FINAL ▾</option>
+                        </select>
+                        <p class="text-slate-400 text-sm">Isi skor pada map yang dimainkan. Submit beberapa kali pada map yang sama akan dihitung <b>rata-ratanya</b>.</p>
                     </div>
                     
                     <form onsubmit="window.saveScores(event, this)" class="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden">
@@ -636,6 +662,7 @@
             `).join('');
             if (players.length === 0) playerRows = `<tr><td colspan="2" class="px-4 py-6 text-center text-slate-500">Tidak ada player terdaftar.</td></tr>`;
 
+            // UPDATE: Menambahkan lencana Stage (badge) di daftar map
             let beatmapRows = state.beatmaps.map(b => {
                 let badgeColor = 'bg-slate-600 text-white';
                 if(b.mod === 'NM') badgeColor = 'bg-emerald-400 text-emerald-950';
@@ -647,7 +674,8 @@
 
                 return `
                 <tr class="border-b border-slate-700 hover:bg-slate-700/50 transition">
-                    <td class="px-4 py-3 whitespace-nowrap text-white">
+                    <td class="px-4 py-3 whitespace-nowrap text-white flex items-center">
+                        <span class="bg-slate-700 border border-slate-600 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded mr-2 uppercase tracking-wider">${b.stage || 'Qualifier'}</span>
                         <span class="${badgeColor} text-xs font-bold px-2 py-1 rounded mr-2">${b.mod}</span>
                         <span class="font-medium">${b.name}</span>
                     </td>
@@ -695,7 +723,16 @@
                                 </h3>
                             </div>
                             <div class="p-4 border-b border-slate-700">
-                                <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapMod.value, this.mapName.value); this.reset();" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                                <!-- UPDATE: Menambahkan dropdown Stage -->
+                                <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value, this.mapName.value); this.reset();" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                                    <select name="mapStage" required class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-32">
+                                        <option value="Qualifier">Qualifier</option>
+                                        <option value="RO32">RO32</option>
+                                        <option value="RO16">RO16</option>
+                                        <option value="Semi Final">Semi Final</option>
+                                        <option value="Final">Final</option>
+                                        <option value="Grand Final">Grand Final</option>
+                                    </select>
                                     <select name="mapMod" required class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-24">
                                         <option value="NM">NM</option>
                                         <option value="HD">HD</option>
@@ -748,22 +785,20 @@
 
         // --- INITIALIZATION ---
         window.addEventListener('DOMContentLoaded', () => {
-            // Seed Mock Data jika offline
             if (!API_URL) {
                 state.players = [
                     { id: 'admin1', username: 'admin', password: 'admin', role: 'admin' },
-                    { id: 'p1', username: 'faker', password: '123', role: 'player' }
                 ];
                 const initialMaps = [
-                    { id: 'nm1', mod: 'NM', name: 'NM1' }, { id: 'nm2', mod: 'NM', name: 'NM2' }, { id: 'nm3', mod: 'NM', name: 'NM3' }, { id: 'nm4', mod: 'NM', name: 'NM4' },
-                    { id: 'hd1', mod: 'HD', name: 'HD1' }, { id: 'hd2', mod: 'HD', name: 'HD2' }, { id: 'hd3', mod: 'HD', name: 'HD3' },
-                    { id: 'hr1', mod: 'HR', name: 'HR1' }, { id: 'hr2', mod: 'HR', name: 'HR2' }, { id: 'hr3', mod: 'HR', name: 'HR3' },
-                    { id: 'dt1', mod: 'DT', name: 'DT1' }, { id: 'dt2', mod: 'DT', name: 'DT2' }, { id: 'dt3', mod: 'DT', name: 'DT3' },
-                    { id: 'mm1', mod: 'MM', name: 'MM1' }, { id: 'mm2', mod: 'MM', name: 'MM2' }, { id: 'tb1', mod: 'TB', name: 'TB1' }
+                    { id: 'nm1', stage: 'Qualifier', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier', mod: 'NM', name: 'NM4' },
+                    { id: 'hd1', stage: 'Qualifier', mod: 'HD', name: 'HD1' }, { id: 'hd2', stage: 'Qualifier', mod: 'HD', name: 'HD2' }, { id: 'hd3', stage: 'Qualifier', mod: 'HD', name: 'HD3' },
+                    { id: 'hr1', stage: 'Qualifier', mod: 'HR', name: 'HR1' }, { id: 'hr2', stage: 'Qualifier', mod: 'HR', name: 'HR2' }, { id: 'hr3', stage: 'Qualifier', mod: 'HR', name: 'HR3' },
+                    { id: 'dt1', stage: 'Qualifier', mod: 'DT', name: 'DT1' }, { id: 'dt2', stage: 'Qualifier', mod: 'DT', name: 'DT2' }, { id: 'dt3', stage: 'Qualifier', mod: 'DT', name: 'DT3' },
+                    { id: 'mm1', stage: 'Qualifier', mod: 'MM', name: 'MM1' }, { id: 'mm2', stage: 'Qualifier', mod: 'MM', name: 'MM2' }, { id: 'tb1', stage: 'Qualifier', mod: 'TB', name: 'TB1' }
                 ];
                 state.beatmaps = initialMaps;
             } else {
-                fetchDatabase(); // Mulai fetching
+                fetchDatabase();
             }
             renderApp();
         });
