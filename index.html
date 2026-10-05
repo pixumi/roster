@@ -13,7 +13,7 @@
     
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -61,20 +61,46 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Flexbox Absolut untuk Vertikal Center Desain Compact */
+        .cell-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 26px;
+            padding: 0 6px;
+            box-sizing: border-box;
+        }
+        .cell-left {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            height: 26px; 
+            padding: 0 6px;
+            box-sizing: border-box;
+        }
+        .cell-right {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            height: 26px; 
+            padding: 0 6px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col" id="main-body">
+<body class="antialiased min-h-screen flex flex-col">
 
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none"></div>
 
     <!-- Main App Container -->
-    <div id="app" class="flex-grow flex flex-col w-full max-w-[95%] mx-auto px-2 sm:px-4 lg:px-8 transition-all duration-300">
+    <div id="app" class="flex-grow flex flex-col w-full max-w-[95%] mx-auto px-2 sm:px-4 lg:px-8">
         <!-- Content will be injected here by JavaScript -->
     </div>
 
     <!-- Footer -->
-    <footer id="footer" class="py-6 text-center text-slate-500 text-sm mt-auto">
+    <footer class="py-6 text-center text-slate-500 text-sm mt-auto">
         <p>&copy; 2026 Tournament Roster. Powered by HTML, CSS, & JS.</p>
     </footer>
 
@@ -473,6 +499,7 @@
                             <i class="fa-solid fa-gamepad text-4xl sm:text-5xl text-brand-500 mb-3"></i>
                             <h2 class="text-2xl sm:text-3xl font-bold">Roster Generator</h2>
                                 <br>
+                                <br>
 
                         <form onsubmit="event.preventDefault(); window.login(this.username.value, this.password.value);" class="space-y-4 sm:space-y-5">
                             <div>
@@ -504,14 +531,6 @@
             const isQualifier = state.currentStage === 'Qualifier';
 
             let viewHTML = '';
-
-            let stageTitle = '';
-            if (state.currentStage === 'Qualifier') stageTitle = 'QUALIFIER - PLAYER SCORES';
-            else if (state.currentStage === 'RO32') stageTitle = 'RO32 - ROSTER';
-            else if (state.currentStage === 'RO16') stageTitle = 'RO16 - ROSTER';
-            else if (state.currentStage === 'Semi Final') stageTitle = 'SEMI FINAL - ROSTER';
-            else if (state.currentStage === 'Final') stageTitle = 'FINAL - ROSTER';
-            else if (state.currentStage === 'Grand Final') stageTitle = 'GRAND FINAL - ROSTER';
 
             if (isQualifier) {
                 // --- TAMPILAN QUALIFIER ---
@@ -579,8 +598,8 @@
                 if (data.rankings.length === 0) rows = `<tr><td colspan="100%" class="px-6 py-8 text-center text-slate-500">Belum ada data pemain.</td></tr>`;
 
                 viewHTML = `
-                    <div class="w-full overflow-x-auto pb-4">
-                        <div id="export-container" class="min-w-fit bg-[#0f172a] rounded-xl relative pt-4 pb-2 px-2 mx-auto">
+                    <div class="w-full overflow-x-auto pb-4 pt-1">
+                        <div class="min-w-fit rounded-xl relative pt-6 pb-2 mx-auto flex flex-col items-center">
                             <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
                                 <div class="overflow-x-auto custom-scrollbar pb-2">
                                     <table class="w-full text-left border-collapse">
@@ -621,9 +640,9 @@
                     mapsInGroup.forEach(map => {
                         let bgColor = getMapColor(map.mod);
 
-                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold text-center align-middle border border-black px-2 py-1.5 text-sm tracking-widest">${map.name}</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center align-middle border border-black px-2 py-1.5 text-xs w-[120px]">Player</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center align-middle border border-black px-2 py-1.5 text-xs w-[80px]">Score</th>`;
+                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold border-b border-r border-black p-0 tracking-widest"><div class="cell-center text-sm">${map.name}</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-black border-b p-0 w-[120px]"><div class="cell-center text-xs">Player</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-black border-b p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
 
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
@@ -636,10 +655,10 @@
                             
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1 font-bold text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1 text-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[120px]"><div class="cell-left font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</div></td>`;
                             } else {
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1">-</td><td class="${cellBg} text-black align-middle border border-black px-2 py-1 text-right font-sans">-</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0"><div class="cell-left px-2">-</div></td><td class="${cellBg} text-black border-r border-b border-black p-0"><div class="cell-right font-sans px-2">-</div></td>`;
                             }
                         }
 
@@ -647,13 +666,13 @@
 
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 text-sm truncate max-w-[120px] font-normal">${pObj ? pObj.username : '-'}</td>`;
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 text-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[120px]"><div class="cell-left text-sm font-normal truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</div></td>`;
                         } else {
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 font-normal">-</td><td class="${subBg} text-black align-middle border border-black px-2 py-1 text-right font-sans font-normal">-</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0"><div class="cell-left font-normal px-2">-</div></td><td class="${subBg} text-black border-r border-b border-black p-0"><div class="cell-right font-sans font-normal px-2">-</div></td>`;
                         }
 
-                        footRow += `<td colspan="2" class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1.5 font-sans text-[13px]">${total.toLocaleString('en-US')}</td>`;
+                        footRow += `<td colspan="2" class="${bgColor} text-black border-r border-black p-0"><div class="cell-center font-bold font-sans text-[13px]">${total.toLocaleString('en-US')}</div></td>`;
                     });
 
                     theadRows += '</tr>';
@@ -694,12 +713,12 @@
                     mmMaps.forEach(map => {
                         let bgColor = getMapColor('MM');
 
-                        theadRows += `<th colspan="4" class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1.5 text-sm tracking-widest">${map.name}</th>`;
+                        theadRows += `<th colspan="4" class="${bgColor} text-black font-bold border-b border-r border-black p-0 tracking-widest"><div class="cell-center text-sm">${map.name}</div></th>`;
                         
-                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1 text-xs w-[120px]">Player</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1 text-xs w-[80px]">Score</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1 text-xs w-[100px]">Backup</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1 text-xs w-[80px]">Score</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[120px]"><div class="cell-center text-xs">Player</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[100px]"><div class="cell-center text-xs">Backup</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
 
                         const statsHR = data.mapStats[`${map.id}_HR`] || [];
                         const statsHD = data.mapStats[`${map.id}_HD`] || [];
@@ -724,36 +743,36 @@
 
                             if (mainP) {
                                 const pObj = state.players.find(pl => pl.id === mainP.playerId);
-                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border border-black px-2 py-1 font-bold text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border border-black px-2 py-1 text-right font-sans font-bold text-sm">${mainP.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0 w-[120px]"><div class="cell-left font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans font-bold text-sm">${mainP.average.toLocaleString('en-US')}</div></td>`;
                             } else {
-                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border border-black px-2 py-1">-</td><td class="${mainColor} text-black align-middle border border-black px-2 py-1 text-right font-sans">-</td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0"><div class="cell-left px-2">-</div></td><td class="${mainColor} text-black border-r border-b border-black p-0"><div class="cell-right font-sans px-2">-</div></td>`;
                             }
 
                             if (backupP) {
                                 const pObj = state.players.find(pl => pl.id === backupP.playerId);
-                                bodyRows[i] += `<td class="${backColor} text-black align-middle border border-black px-2 py-1 text-sm truncate max-w-[100px] font-normal">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${backColor} text-black align-middle border border-black px-2 py-1 text-right font-sans text-sm font-normal">${backupP.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0 w-[100px]"><div class="cell-left text-sm font-normal truncate w-[100px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans text-sm font-normal">${backupP.average.toLocaleString('en-US')}</div></td>`;
                             } else {
-                                bodyRows[i] += `<td class="${backColor} text-black align-middle border border-black px-2 py-1 font-normal">-</td><td class="${backColor} text-black align-middle border border-black px-2 py-1 text-right font-sans font-normal">-</td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0"><div class="cell-left font-normal px-2">-</div></td><td class="${backColor} text-black border-r border-b border-black p-0"><div class="cell-right font-sans font-normal px-2">-</div></td>`;
                             }
                         }
 
-                        // Baris 4: MM Total Main & Total Backup (sejajar dengan TB backup)
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1.5 font-sans text-[13px]">${totalMapMain.toLocaleString('en-US')}</td>`;
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black align-middle text-center border border-black px-2 py-1.5 font-sans text-[13px] font-normal">${totalMapBackup.toLocaleString('en-US')}</td>`;
+                        // Baris 4: MM Total Main & Total Backup 
+                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black border-r border-b border-black p-0"><div class="cell-center font-bold font-sans text-[13px]">${totalMapMain.toLocaleString('en-US')}</div></td>`;
+                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black border-r border-b border-black p-0"><div class="cell-center font-normal font-sans text-[13px]">${totalMapBackup.toLocaleString('en-US')}</div></td>`;
                         
                         // Baris 5: Ruang kosong agar TB Total bisa berada di bawah
-                        bodyRows[4] += `<td colspan="4" class="${bgColor} border border-black p-0 border-t-0"></td>`;
+                        bodyRows[4] += `<td colspan="4" class="${bgColor} border-r border-black border-t-0 p-0 m-0"><div class="h-[26px]"></div></td>`;
                     });
 
                     // TB MAPS
                     tbMaps.forEach(map => {
                         let tbBg = getMapColor('TB');
                         
-                        theadRows += `<th colspan="2" class="${tbBg} text-black align-middle font-bold text-center border border-black px-2 py-1.5 text-sm tracking-widest">${map.name}</th>`;
-                        tcol1Rows += `<th class="${tbBg} text-black align-middle font-bold text-center border border-black px-2 py-1 text-xs w-[120px]">Player</th>`;
-                        tcol1Rows += `<th class="${tbBg} text-black align-middle font-bold text-center border border-black px-2 py-1 text-xs w-[80px]">Score</th>`;
+                        theadRows += `<th colspan="2" class="${tbBg} text-black font-bold border-b border-r border-black p-0 tracking-widest"><div class="cell-center text-sm">${map.name}</div></th>`;
+                        tcol1Rows += `<th class="${tbBg} text-black font-bold border-r border-b border-black p-0 w-[120px]"><div class="cell-center text-xs">Player</div></th>`;
+                        tcol1Rows += `<th class="${tbBg} text-black font-bold border-r border-b border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
 
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
@@ -765,10 +784,10 @@
                             let cellBg = (i % 2 === 0) ? 'bg-[#f8f8f8]' : 'bg-white'; 
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1 font-bold text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1 text-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[120px]"><div class="cell-left font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</div></td>`;
                             } else {
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1">-</td><td class="${cellBg} text-black align-middle border border-black px-2 py-1 text-right font-sans">-</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0"><div class="cell-left px-2">-</div></td><td class="${cellBg} text-black border-r border-b border-black p-0"><div class="cell-right font-sans px-2">-</div></td>`;
                             }
                         }
 
@@ -776,14 +795,14 @@
                         
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 text-sm truncate max-w-[120px] font-normal">${pObj ? pObj.username : '-'}</td>`;
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 text-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[120px]"><div class="cell-left text-sm font-normal truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</div></td>`;
                         } else {
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 font-normal">-</td><td class="${subBg} text-black align-middle border border-black px-2 py-1 text-right font-sans font-normal">-</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0"><div class="cell-left font-normal px-2">-</div></td><td class="${subBg} text-black border-r border-b border-black p-0"><div class="cell-right font-sans font-normal px-2">-</div></td>`;
                         }
 
                         // Baris 5: Total TB
-                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black align-middle font-bold text-center border border-black px-2 py-1.5 font-sans text-[13px]">${totalTB.toLocaleString('en-US')}</td>`;
+                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black border-r border-black p-0"><div class="cell-center font-bold font-sans text-[13px]">${totalTB.toLocaleString('en-US')}</div></td>`;
                     });
 
                     theadRows += '</tr>';
@@ -815,8 +834,7 @@
                 
                 viewHTML = `
                     <div class="w-full overflow-x-auto pb-4 pt-1">
-                        <div id="export-container" class="w-fit min-w-full rounded-xl relative pt-6 pb-2 px-6 mx-auto flex flex-col items-center">
-                            <h2 class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center">${stageTitle}</h2>
+                        <div class="w-fit min-w-full rounded-xl relative pt-6 pb-2 mx-auto flex flex-col items-center">
                             ${rosterHTML}
                         </div>
                     </div>
@@ -825,10 +843,8 @@
 
             return `
                 <div class="fade-in w-full flex flex-col">
-                    <div class="hide-in-capture flex flex-col sm:flex-row justify-between items-center mb-5 w-full gap-4 sm:gap-0">
-                        <div class="flex-1 w-full sm:w-auto"></div>
-                        
-                        <div id="export-dropdown-wrapper" class="flex flex-col items-center text-center flex-1 w-full sm:w-auto">
+                    <div class="flex justify-center items-center mb-5 w-full">
+                        <div class="flex flex-col items-center text-center">
                             <select onchange="window.changeStage(this.value)" class="bg-transparent text-2xl sm:text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last px-2">
                                 <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>QUALIFIER - PLAYER SCORES ▾</option>
                                 <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>RO32 - ROSTER ▾</option>
@@ -837,9 +853,6 @@
                                 <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>FINAL - ROSTER ▾</option>
                                 <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>GRAND FINAL - ROSTER ▾</option>
                             </select>
-                        </div>
-
-                        <div class="flex-1 flex justify-center sm:justify-end w-full sm:w-auto">
                         </div>
                     </div>
                     ${viewHTML}
