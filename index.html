@@ -68,7 +68,8 @@
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none"></div>
 
     <!-- Main App Container -->
-    <div id="app" class="flex-grow flex flex-col w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- UPDATE: max-w diubah menjadi max-w-[95%] agar sangat lebar dan lega -->
+    <div id="app" class="flex-grow flex flex-col w-full max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Content will be injected here by JavaScript -->
     </div>
 
@@ -192,7 +193,6 @@
         }
 
         window.removePlayer = async function(playerId) {
-            // POPUP KONFIRMASI HAPUS PLAYER
             if (!confirm('Peringatan: Apakah Anda yakin ingin menghapus player ini? Seluruh data skor milik player ini akan ikut terhapus secara permanen.')) return;
             
             if(API_URL) {
@@ -225,7 +225,6 @@
         }
 
         window.removeBeatmap = async function(beatmapId) {
-            // POPUP KONFIRMASI HAPUS MAPPOOL
             if (!confirm('Peringatan: Apakah Anda yakin ingin menghapus beatmap ini? Seluruh data skor pada map ini akan ikut terhapus.')) return;
             
             if(API_URL) {
@@ -463,7 +462,7 @@
             let viewHTML = '';
 
             if (isQualifier) {
-                // --- TAMPILAN QUALIFIER (TETAP SAMA SEPERTI SEBELUMNYA) ---
+                // --- TAMPILAN QUALIFIER ---
                 let mapHeaders = '';
                 currentStageMaps.forEach(map => {
                     if (map.mod === 'MM') {
@@ -548,9 +547,8 @@
                     </div>
                 `;
             } else {
-                // --- TAMPILAN ROSTER GRID BARU (Sejajar Horisontal) ---
+                // --- TAMPILAN ROSTER GRID BARU ---
                 
-                // Helper pembuat tabel Grid Reguler (NM, HD, HR, DT, TB)
                 const generateRegularGrid = (modsArray) => {
                     let mapsInGroup = [];
                     modsArray.forEach(m => {
@@ -561,15 +559,15 @@
 
                     let theadRows = '<tr>';
                     let tcol1Rows = '<tr class="bg-slate-900 border-b border-black">';
-                    let bodyRows = ['', '', '', '']; // 3 Inti + 1 Backup
+                    let bodyRows = ['', '', '', ''];
                     let footRow = '<tr class="font-bold border-t border-black text-[13px] bg-white text-black">';
 
                     mapsInGroup.forEach(map => {
                         let bgColor = 'bg-slate-300';
-                        if(map.mod === 'NM') bgColor = 'bg-[#a9d18e]'; // Hijau Excel
-                        if(map.mod === 'HD') bgColor = 'bg-[#ffd966]'; // Kuning Excel
-                        if(map.mod === 'HR') bgColor = 'bg-[#ea9999]'; // Merah Excel
-                        if(map.mod === 'DT') bgColor = 'bg-[#9bc2e6]'; // Biru Excel
+                        if(map.mod === 'NM') bgColor = 'bg-[#a9d18e]'; 
+                        if(map.mod === 'HD') bgColor = 'bg-[#ffd966]'; 
+                        if(map.mod === 'HR') bgColor = 'bg-[#ea9999]'; 
+                        if(map.mod === 'DT') bgColor = 'bg-[#9bc2e6]'; 
                         if(map.mod === 'TB') bgColor = 'bg-slate-300';
 
                         theadRows += `<th colspan="2" class="${bgColor} text-black font-bold text-center border-b border-r border-black px-2 py-1 text-sm tracking-widest">${map.name}</th>`;
@@ -583,7 +581,7 @@
 
                         for(let i=0; i<3; i++) {
                             const p = top3[i];
-                            let cellBg = (i % 2 === 0) ? bgColor : bgColor.replace(']', ']/80'); // Selang-seling warna
+                            let cellBg = (i % 2 === 0) ? bgColor : bgColor.replace(']', ']/80'); 
                             
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
@@ -594,8 +592,7 @@
                             }
                         }
 
-                        // Baris 4 (Backup)
-                        let subBg = 'bg-[#e2efda]'; // Hijau muda pucat
+                        let subBg = 'bg-[#e2efda]'; 
                         if(map.mod === 'HD') subBg = 'bg-[#fff2cc]';
                         if(map.mod === 'HR') subBg = 'bg-[#f4cccc]';
                         if(map.mod === 'DT') subBg = 'bg-[#ddebf7]';
@@ -616,9 +613,10 @@
                     footRow += '</tr>';
                     let combinedBody = bodyRows.map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
 
+                    // UPDATE: border-[3px] ditambahkan
                     return `
-                        <div class="overflow-x-auto w-full mb-6">
-                            <table class="border-collapse border border-black min-w-max bg-white shadow-xl mx-auto">
+                        <div class="overflow-x-auto max-w-full mb-6 mx-auto">
+                            <table class="border-collapse border-[3px] border-black min-w-max bg-white shadow-2xl mx-auto">
                                 <thead>${theadRows}${tcol1Rows}</thead>
                                 <tbody>${combinedBody}</tbody>
                                 <tfoot>${footRow}</tfoot>
@@ -627,17 +625,16 @@
                     `;
                 }
 
-                // Helper pembuat tabel Grid Khusus MM
                 const generateMMGrid = () => {
                     const mmMaps = currentStageMaps.filter(b => b.mod === 'MM');
                     if (mmMaps.length === 0) return '';
 
                     let theadRows = '<tr>';
                     let tcol1Rows = '<tr class="border-b border-black">';
-                    let bodyRows = ['', '', '']; // 3 Baris: HR, HD, NM
+                    let bodyRows = ['', '', '']; 
                     let footRow = '<tr class="font-bold border-t border-black text-[13px] text-black">';
 
-                    const bgColor = 'bg-[#c2c2f0]'; // Ungu pucat MM
+                    const bgColor = 'bg-[#c2c2f0]'; 
                     const hrColor = 'bg-[#ea9999]';
                     const hdColor = 'bg-[#ffd966]';
                     const nmColor = 'bg-[#a9d18e]';
@@ -657,7 +654,6 @@
                         const statsHD = data.mapStats[`${map.id}_HD`] || [];
                         const statsNM = data.mapStats[`${map.id}_NM`] || [];
 
-                        // Array mod urutan rendering (Baris 1 HR, Baris 2 HD, Baris 3 NM)
                         const rowsData = [
                             { stats: statsHR, mainColor: hrColor, backColor: backupColorHR },
                             { stats: statsHD, mainColor: hdColor, backColor: backupColorHD },
@@ -669,11 +665,10 @@
                         for(let i=0; i<3; i++) {
                             const { stats, mainColor, backColor } = rowsData[i];
                             const mainP = stats[0];
-                            const backupP = stats[1]; // Backup untuk subMod adalah rank #2 di map tsb
+                            const backupP = stats[1]; 
 
                             if(mainP) totalMap += mainP.average;
 
-                            // Kolom Player Inti & Skor
                             if (mainP) {
                                 const pObj = state.players.find(pl => pl.id === mainP.playerId);
                                 bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black px-2 py-1 font-medium text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
@@ -682,7 +677,6 @@
                                 bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black px-2 py-1">-</td><td class="${mainColor} text-black border-r border-b border-black px-2 py-1 text-right font-mono">-</td>`;
                             }
 
-                            // Kolom Backup & Skor
                             if (backupP) {
                                 const pObj = state.players.find(pl => pl.id === backupP.playerId);
                                 bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black px-2 py-1 text-sm truncate max-w-[100px]">${pObj ? pObj.username : '-'}</td>`;
@@ -700,9 +694,10 @@
                     footRow += '</tr>';
                     let combinedBody = bodyRows.map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
 
+                    // UPDATE: border-[3px] ditambahkan
                     return `
-                        <div class="overflow-x-auto w-full mb-6">
-                            <table class="border-collapse border border-black min-w-max bg-white shadow-xl mx-auto">
+                        <div class="overflow-x-auto max-w-full mb-6 mx-auto">
+                            <table class="border-collapse border-[3px] border-black min-w-max bg-white shadow-2xl mx-auto">
                                 <thead>${theadRows}${tcol1Rows}</thead>
                                 <tbody>${combinedBody}</tbody>
                                 <tfoot>${footRow}</tfoot>
@@ -711,20 +706,19 @@
                     `;
                 }
 
-                // Render per baris
-                const row1 = generateRegularGrid(['NM', 'DT']); // Baris 1: NM & DT sejajar
-                const row2 = generateRegularGrid(['HD', 'HR']); // Baris 2: HD & HR sejajar
+                const row1 = generateRegularGrid(['NM', 'DT']); 
+                const row2 = generateRegularGrid(['HD', 'HR']); 
                 
-                // Baris 3: MM dan TB sejajar
                 let row3 = '';
                 const mmGrid = generateMMGrid();
                 const tbGrid = generateRegularGrid(['TB']);
                 
+                // UPDATE: Menjadikan MM dan TB dalam satu baris dengan flex-nowrap
                 if (mmGrid || tbGrid) {
                     row3 = `
-                        <div class="flex flex-wrap items-start justify-center gap-0 w-full mb-6">
-                            <div class="flex-auto overflow-x-auto m-0 p-0">${mmGrid}</div>
-                            <div class="flex-auto overflow-x-auto m-0 p-0">${tbGrid}</div>
+                        <div class="flex flex-nowrap items-start justify-center w-full mb-6 max-w-full overflow-x-auto">
+                            ${mmGrid ? mmGrid.replace('mb-6', 'mb-0') : ''}
+                            ${tbGrid ? tbGrid.replace('mb-6', 'mb-0') : ''}
                         </div>
                     `;
                 }
@@ -755,6 +749,7 @@
                 </div>
             `;
         }
+
         function renderSubmitScore() {
             const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === state.currentStage);
             const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
