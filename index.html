@@ -70,32 +70,6 @@
             padding: 20px;
             border-radius: 8px;
         }
-
-        /* Flexbox Absolut untuk Vertikal Center html2canvas & Desain Compact */
-        .cell-center {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 26px; /* Lebih compact */
-            padding: 0 6px;
-            box-sizing: border-box;
-        }
-        .cell-left {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            height: 26px; 
-            padding: 0 6px;
-            box-sizing: border-box;
-        }
-        .cell-right {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            height: 26px; 
-            padding: 0 6px;
-            box-sizing: border-box;
-        }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col">
@@ -536,6 +510,27 @@
             return { rankings, mapStats };
         }
 
+        // --- CSS GRID ROSTER HELPERS ---
+        function getMapColor(mod) {
+            if(mod === 'NM') return 'bg-[#a9d18e]'; 
+            if(mod === 'HD') return 'bg-[#ffd966]'; 
+            if(mod === 'HR') return 'bg-[#ea9999]'; 
+            if(mod === 'DT') return 'bg-[#9bc2e6]'; 
+            if(mod === 'MM') return 'bg-[#c2c2f0]';
+            if(mod === 'TB') return 'bg-[#e7e6e6]';
+            return 'bg-slate-300';
+        }
+
+        function getSubColor(mod) {
+            if(mod === 'NM') return 'bg-[#e2efda]'; 
+            if(mod === 'HD') return 'bg-[#fff2cc]';
+            if(mod === 'HR') return 'bg-[#f4cccc]';
+            if(mod === 'DT') return 'bg-[#ddebf7]';
+            if(mod === 'MM') return 'bg-[#e6e6f9]'; 
+            if(mod === 'TB') return 'bg-[#f2f2f2]';
+            return 'bg-[#e2efda]';
+        }
+
         // --- UI RENDERING COMPONENTS ---
         function renderNavbar() {
             if (!state.currentUser) return '';
@@ -632,6 +627,7 @@
             else if (state.currentStage === 'Grand Final') stageTitle = 'GRAND FINAL - ROSTER';
 
             if (isQualifier) {
+                // ... QUALIFIER TABLE TETAP ...
                 let mapHeaders = '';
                 currentStageMaps.forEach(map => {
                     if (map.mod === 'MM') {
@@ -722,35 +718,39 @@
                     </div>
                 `;
             } else {
-                // --- TAMPILAN ROSTER GRID BARU ---
+                // --- TAMPILAN ROSTER GRID BARU (CSS GRID + FLEXBOX ABSOLUT) ---
                 
                 const generateRegularGrid = (modsArray) => {
                     let mapsInGroup = [];
                     modsArray.forEach(m => {
                         mapsInGroup = mapsInGroup.concat(currentStageMaps.filter(b => b.mod === m));
                     });
-                    
                     if (mapsInGroup.length === 0) return '';
 
-                    let theadRows = '<tr>';
-                    let tcol1Rows = '<tr class="bg-slate-900 border-b border-black">';
-                    let bodyRows = ['', '', '', ''];
-                    let footRow = '<tr class="border-t border-black bg-white text-black">';
+                    let gridTemplate = `repeat(${mapsInGroup.length}, 120px 80px)`;
+                    
+                    let html = `<div class="w-full text-center mb-6">
+                        <div class="inline-grid bg-black border-[3px] border-black gap-[1px] shadow-2xl mx-auto" style="grid-template-columns: ${gridTemplate};">`;
 
+                    // R1: Map Headers
                     mapsInGroup.forEach(map => {
-                        let bgColor = 'bg-slate-300';
-                        if(map.mod === 'NM') bgColor = 'bg-[#a9d18e]'; 
-                        if(map.mod === 'HD') bgColor = 'bg-[#ffd966]'; 
-                        if(map.mod === 'HR') bgColor = 'bg-[#ea9999]'; 
-                        if(map.mod === 'DT') bgColor = 'bg-[#9bc2e6]'; 
-                        if(map.mod === 'TB') bgColor = 'bg-slate-300';
+                        let bgColor = getMapColor(map.mod);
+                        html += `<div style="grid-column: span 2;" class="${bgColor} cell-center font-bold text-sm tracking-widest text-black">${map.name}</div>`;
+                    });
 
-                        // Memakai div .cell-center agar vertikal alignment mutlak
-                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold border-b border-r border-black p-0 tracking-widest"><div class="cell-center text-sm">${map.name}</div></th>`;
+                    // R2: Player & Score Headers
+                    mapsInGroup.forEach(map => {
+                        let bgColor = getMapColor(map.mod);
+                        html += `<div class="${bgColor} cell-center font-bold text-xs text-black">Player</div>`;
+                        html += `<div class="${bgColor} cell-center font-bold text-xs text-black">Score</div>`;
+                    });
+
+                    // R3, R4, R5, R6, R7
+                    let rowsData = ['', '', '', '', ''];
+                    mapsInGroup.forEach(map => {
+                        let bgColor = getMapColor(map.mod);
+                        let subBg = getSubColor(map.mod);
                         
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-black border-b p-0 w-[120px]"><div class="cell-center text-xs">Player</div></th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-black border-b p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
-
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
                         const backup = stats[3];
@@ -762,46 +762,29 @@
                             
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[120px]"><div class="cell-left font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</div></td>`;
+                                rowsData[i] += `<div class="${cellBg} cell-left text-black font-bold text-sm min-w-0"><span class="truncate w-full text-left">${pObj ? pObj.username : '-'}</span></div>`;
+                                rowsData[i] += `<div class="${cellBg} cell-right text-black font-sans font-bold text-sm min-w-0"><span class="truncate">${p.average.toLocaleString('en-US')}</span></div>`;
                             } else {
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0"><div class="cell-left px-2">-</div></td><td class="${cellBg} text-black border-r border-b border-black p-0"><div class="cell-right font-sans px-2">-</div></td>`;
+                                rowsData[i] += `<div class="${cellBg} cell-left text-black font-bold text-sm min-w-0">-</div><div class="${cellBg} cell-right text-black font-sans font-bold text-sm min-w-0">-</div>`;
                             }
                         }
 
-                        let subBg = 'bg-[#e2efda]'; 
-                        if(map.mod === 'HD') subBg = 'bg-[#fff2cc]';
-                        if(map.mod === 'HR') subBg = 'bg-[#f4cccc]';
-                        if(map.mod === 'DT') subBg = 'bg-[#ddebf7]';
-                        if(map.mod === 'TB') subBg = 'bg-[#e7e6e6]';
-
+                        // Backup
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[120px]"><div class="cell-left text-sm font-normal truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</div></td>`;
+                            rowsData[3] += `<div class="${subBg} cell-left text-black text-sm font-normal min-w-0"><span class="truncate w-full text-left">${pObj ? pObj.username : '-'}</span></div>`;
+                            rowsData[3] += `<div class="${subBg} cell-right text-black font-sans text-sm font-normal min-w-0"><span class="truncate">${backup.average.toLocaleString('en-US')}</span></div>`;
                         } else {
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0"><div class="cell-left font-normal px-2">-</div></td><td class="${subBg} text-black border-r border-b border-black p-0"><div class="cell-right font-sans font-normal px-2">-</div></td>`;
+                            rowsData[3] += `<div class="${subBg} cell-left text-black font-normal text-sm min-w-0">-</div><div class="${subBg} cell-right text-black font-sans font-normal text-sm min-w-0">-</div>`;
                         }
 
-                        footRow += `<td colspan="2" class="${bgColor} text-black border-r border-black p-0"><div class="cell-center font-bold font-sans text-[13px]">${total.toLocaleString('en-US')}</div></td>`;
+                        // Total
+                        rowsData[4] += `<div style="grid-column: span 2;" class="${bgColor} cell-center text-black font-bold font-sans text-[13px] min-w-0">${total.toLocaleString('en-US')}</div>`;
                     });
 
-                    theadRows += '</tr>';
-                    tcol1Rows += '</tr>';
-                    footRow += '</tr>';
-                    let combinedBody = bodyRows.map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
-
-                    return `
-                        <div class="w-full text-center mb-6">
-                            <div class="inline-block overflow-x-auto max-w-full align-top">
-                                <table class="border-collapse border-[4px] border-black bg-white shadow-2xl mx-auto">
-                                    <thead>${theadRows}${tcol1Rows}</thead>
-                                    <tbody>${combinedBody}</tbody>
-                                    <tfoot>${footRow}</tfoot>
-                                </table>
-                            </div>
-                        </div>
-                    `;
+                    rowsData.forEach(r => { html += r; });
+                    html += `</div></div>`;
+                    return html;
                 }
 
                 const generateMMAndTBGrid = () => {
@@ -810,77 +793,88 @@
                     
                     if (mmMaps.length === 0 && tbMaps.length === 0) return '';
 
-                    let theadRows = '<tr>';
-                    let tcol1Rows = '<tr class="border-b border-black">';
-                    let bodyRows = ['', '', '', '']; 
-                    let footRow = '<tr class="border-t border-black text-black">';
+                    let gridTemplate = '';
+                    if (mmMaps.length > 0) gridTemplate += `repeat(${mmMaps.length}, 120px 80px 100px 80px) `;
+                    if (tbMaps.length > 0) gridTemplate += `repeat(${tbMaps.length}, 120px 80px)`;
+
+                    let html = `<div class="w-full text-center mb-6">
+                        <div class="inline-grid bg-black border-[3px] border-black gap-[1px] shadow-2xl mx-auto" style="grid-template-columns: ${gridTemplate};">`;
+
+                    // R1: Headers
+                    mmMaps.forEach(map => {
+                        let bgColor = getMapColor('MM');
+                        html += `<div style="grid-column: span 4;" class="${bgColor} cell-center font-bold text-sm tracking-widest text-black">${map.name}</div>`;
+                    });
+                    tbMaps.forEach(map => {
+                        let tbBg = getMapColor('TB');
+                        html += `<div style="grid-column: span 2;" class="${tbBg} cell-center font-bold text-sm tracking-widest text-black">${map.name}</div>`;
+                    });
+
+                    // R2: Subheaders
+                    mmMaps.forEach(map => {
+                        let bgColor = getMapColor('MM');
+                        html += `<div class="${bgColor} cell-center font-bold text-xs text-black">Player</div>`;
+                        html += `<div class="${bgColor} cell-center font-bold text-xs text-black">Score</div>`;
+                        html += `<div class="${bgColor} cell-center font-bold text-xs text-black">Backup</div>`;
+                        html += `<div class="${bgColor} cell-center font-bold text-xs text-black">Score</div>`;
+                    });
+                    tbMaps.forEach(map => {
+                        let tbBg = getMapColor('TB');
+                        html += `<div class="${tbBg} cell-center font-bold text-xs text-black">Player</div>`;
+                        html += `<div class="${tbBg} cell-center font-bold text-xs text-black">Score</div>`;
+                    });
+
+                    let rowsData = ['', '', '', '', ''];
                     
-                    const bgColor = 'bg-[#c2c2f0]'; 
-                    const hrColor = 'bg-[#ea9999]';
-                    const hdColor = 'bg-[#ffd966]';
-                    const nmColor = 'bg-[#a9d18e]';
-                    const backupColorHR = 'bg-[#f4cccc]';
-                    const backupColorHD = 'bg-[#fff2cc]';
-                    const backupColorNM = 'bg-[#e2efda]';
+                    const hrColor = getMapColor('HR'), hdColor = getMapColor('HD'), nmColor = getMapColor('NM');
+                    const backupColorHR = getSubColor('HR'), backupColorHD = getSubColor('HD'), backupColorNM = getSubColor('NM');
 
                     mmMaps.forEach(map => {
-                        theadRows += `<th colspan="4" class="${bgColor} text-black font-bold border-b border-r border-black p-0 tracking-widest"><div class="cell-center text-sm">${map.name}</div></th>`;
-                        
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[120px]"><div class="cell-center text-xs">Player</div></th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[100px]"><div class="cell-center text-xs">Backup</div></th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
-
+                        let bgColor = getMapColor('MM');
                         const statsHR = data.mapStats[`${map.id}_HR`] || [];
                         const statsHD = data.mapStats[`${map.id}_HD`] || [];
                         const statsNM = data.mapStats[`${map.id}_NM`] || [];
 
-                        const rowsData = [
+                        const mapRows = [
                             { stats: statsHR, mainColor: hrColor, backColor: backupColorHR },
                             { stats: statsHD, mainColor: hdColor, backColor: backupColorHD },
                             { stats: statsNM, mainColor: nmColor, backColor: backupColorNM }
                         ];
 
-                        let totalMapMain = 0;
-                        let totalMapBackup = 0;
+                        let totalMain = 0, totalBackup = 0;
 
                         for(let i=0; i<3; i++) {
-                            const { stats, mainColor, backColor } = rowsData[i];
-                            const mainP = stats[0];
-                            const backupP = stats[1]; 
-
-                            if(mainP) totalMapMain += mainP.average;
-                            if(backupP) totalMapBackup += backupP.average;
+                            const { stats, mainColor, backColor } = mapRows[i];
+                            const mainP = stats[0], backupP = stats[1]; 
+                            if(mainP) totalMain += mainP.average;
+                            if(backupP) totalBackup += backupP.average;
 
                             if (mainP) {
                                 const pObj = state.players.find(pl => pl.id === mainP.playerId);
-                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0 w-[120px]"><div class="cell-left font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
-                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans font-bold text-sm">${mainP.average.toLocaleString('en-US')}</div></td>`;
+                                rowsData[i] += `<div class="${mainColor} cell-left text-black font-bold text-sm min-w-0"><span class="truncate w-full text-left">${pObj ? pObj.username : '-'}</span></div>`;
+                                rowsData[i] += `<div class="${mainColor} cell-right text-black font-sans font-bold text-sm min-w-0"><span class="truncate">${mainP.average.toLocaleString('en-US')}</span></div>`;
                             } else {
-                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0"><div class="cell-left px-2">-</div></td><td class="${mainColor} text-black border-r border-b border-black p-0"><div class="cell-right font-sans px-2">-</div></td>`;
+                                rowsData[i] += `<div class="${mainColor} cell-left text-black font-bold text-sm min-w-0">-</div><div class="${mainColor} cell-right text-black font-sans font-bold text-sm min-w-0">-</div>`;
                             }
 
                             if (backupP) {
                                 const pObj = state.players.find(pl => pl.id === backupP.playerId);
-                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0 w-[100px]"><div class="cell-left text-sm font-normal truncate w-[100px]">${pObj ? pObj.username : '-'}</div></td>`;
-                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans text-sm font-normal">${backupP.average.toLocaleString('en-US')}</div></td>`;
+                                rowsData[i] += `<div class="${backColor} cell-left text-black text-sm font-normal min-w-0"><span class="truncate w-full text-left">${pObj ? pObj.username : '-'}</span></div>`;
+                                rowsData[i] += `<div class="${backColor} cell-right text-black font-sans text-sm font-normal min-w-0"><span class="truncate">${backupP.average.toLocaleString('en-US')}</span></div>`;
                             } else {
-                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0"><div class="cell-left font-normal px-2">-</div></td><td class="${backColor} text-black border-r border-b border-black p-0"><div class="cell-right font-sans font-normal px-2">-</div></td>`;
+                                rowsData[i] += `<div class="${backColor} cell-left text-black font-normal text-sm min-w-0">-</div><div class="${backColor} cell-right text-black font-sans font-normal text-sm min-w-0">-</div>`;
                             }
                         }
 
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black border-r border-b border-black p-0"><div class="cell-center font-bold font-sans text-[13px]">${totalMapMain.toLocaleString('en-US')}</div></td>`;
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black border-r border-b border-black p-0"><div class="cell-center font-normal font-sans text-[13px]">${totalMapBackup.toLocaleString('en-US')}</div></td>`;
+                        rowsData[3] += `<div style="grid-column: span 2;" class="${bgColor} cell-center text-black font-bold font-sans text-[13px] min-w-0">${totalMain.toLocaleString('en-US')}</div>`;
+                        rowsData[3] += `<div style="grid-column: span 2;" class="${bgColor} cell-center text-black font-normal font-sans text-[13px] min-w-0">${totalBackup.toLocaleString('en-US')}</div>`;
+                        
+                        rowsData[4] += `<div style="grid-column: span 4;" class="${bgColor} bg-opacity-0 text-transparent h-[26px]"></div>`; // Ruang kosong MM di baris 5
                     });
 
-                    // TB MAPS
                     tbMaps.forEach(map => {
-                        let tbBg = 'bg-[#e7e6e6]'; 
-                        
-                        theadRows += `<th colspan="2" class="${tbBg} text-black font-bold border-b border-r border-black p-0 tracking-widest"><div class="cell-center text-sm">${map.name}</div></th>`;
-                        tcol1Rows += `<th class="${tbBg} text-black font-bold border-r border-b border-black p-0 w-[120px]"><div class="cell-center text-xs">Player</div></th>`;
-                        tcol1Rows += `<th class="${tbBg} text-black font-bold border-r border-b border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
-
+                        const tbBg = getMapColor('TB');
+                        const subBg = getSubColor('TB');
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
                         const backup = stats[3];
@@ -891,48 +885,27 @@
                             let cellBg = (i % 2 === 0) ? 'bg-[#f8f8f8]' : 'bg-white'; 
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[120px]"><div class="cell-left font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</div></td>`;
+                                rowsData[i] += `<div class="${cellBg} cell-left text-black font-bold text-sm min-w-0"><span class="truncate w-full text-left">${pObj ? pObj.username : '-'}</span></div>`;
+                                rowsData[i] += `<div class="${cellBg} cell-right text-black font-sans font-bold text-sm min-w-0"><span class="truncate">${p.average.toLocaleString('en-US')}</span></div>`;
                             } else {
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0"><div class="cell-left px-2">-</div></td><td class="${cellBg} text-black border-r border-b border-black p-0"><div class="cell-right font-sans px-2">-</div></td>`;
+                                rowsData[i] += `<div class="${cellBg} cell-left text-black font-bold text-sm min-w-0">-</div><div class="${cellBg} cell-right text-black font-sans font-bold text-sm min-w-0">-</div>`;
                             }
                         }
 
-                        let subBg = 'bg-[#f2f2f2]';
-                        if(!bodyRows[3]) bodyRows[3] = '';
-                        
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[120px]"><div class="cell-left text-sm font-normal truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[80px]"><div class="cell-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</div></td>`;
+                            rowsData[3] += `<div class="${subBg} cell-left text-black text-sm font-normal min-w-0"><span class="truncate w-full text-left">${pObj ? pObj.username : '-'}</span></div>`;
+                            rowsData[3] += `<div class="${subBg} cell-right text-black font-sans text-sm font-normal min-w-0"><span class="truncate">${backup.average.toLocaleString('en-US')}</span></div>`;
                         } else {
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0"><div class="cell-left font-normal px-2">-</div></td><td class="${subBg} text-black border-r border-b border-black p-0"><div class="cell-right font-sans font-normal px-2">-</div></td>`;
+                            rowsData[3] += `<div class="${subBg} cell-left text-black font-normal text-sm min-w-0">-</div><div class="${subBg} cell-right text-black font-sans font-normal text-sm min-w-0">-</div>`;
                         }
 
-                        if(!bodyRows[4]) bodyRows[4] = '';
-                        const totalMMCols = mmMaps.length * 4;
-                        if(totalMMCols > 0 && bodyRows[4] === '') {
-                            bodyRows[4] += `<td colspan="${totalMMCols}" class="bg-[#c2c2f0] border-r border-black border-t-0 p-0 m-0"><div class="h-[26px]"></div></td>`;
-                        }
-                        
-                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black border-r border-black p-0"><div class="cell-center font-bold font-sans text-[13px]">${totalTB.toLocaleString('en-US')}</div></td>`;
+                        rowsData[4] += `<div style="grid-column: span 2;" class="${tbBg} cell-center text-black font-bold font-sans text-[13px] min-w-0">${totalTB.toLocaleString('en-US')}</div>`;
                     });
 
-                    theadRows += '</tr>';
-                    tcol1Rows += '</tr>';
-                    
-                    let combinedBody = bodyRows.filter(r => r !== '').map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
-
-                    return `
-                        <div class="w-full text-center mb-6">
-                            <div class="inline-block overflow-x-auto max-w-full align-top">
-                                <table class="border-collapse border-[4px] border-black bg-white shadow-2xl mx-auto">
-                                    <thead>${theadRows}${tcol1Rows}</thead>
-                                    <tbody>${combinedBody}</tbody>
-                                </table>
-                            </div>
-                        </div>
-                    `;
+                    rowsData.forEach(r => { html += r; });
+                    html += `</div></div>`;
+                    return html;
                 }
 
                 const row1 = generateRegularGrid(['NM', 'DT']); 
@@ -963,11 +936,11 @@
                         <div id="export-dropdown-wrapper" class="flex flex-col items-center text-center flex-1 w-full sm:w-auto">
                             <select onchange="window.changeStage(this.value)" class="bg-transparent text-2xl sm:text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last px-2">
                                 <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>Form Submission: QUALIFIER ▾</option>
-                                <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>Form Submission: RO32 ▾</option>
-                                <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>Form Submission: RO16 ▾</option>
-                                <option value="Semi Final" class="bg-slate-900 text-base" ${state.currentStage === 'Semi Final' ? 'selected' : ''}>Form Submission: SEMI FINAL ▾</option>
-                                <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>Form Submission: FINAL ▾</option>
-                                <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>Form Submission: GRAND FINAL ▾</option>
+                                <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>RO32 - ROSTER ▾</option>
+                                <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>RO16 - ROSTER ▾</option>
+                                <option value="Semi Final" class="bg-slate-900 text-base" ${state.currentStage === 'Semi Final' ? 'selected' : ''}>SEMI FINAL - ROSTER ▾</option>
+                                <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>FINAL - ROSTER ▾</option>
+                                <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>GRAND FINAL - ROSTER ▾</option>
                             </select>
                         </div>
 
@@ -1169,7 +1142,7 @@
                                 <form onsubmit="event.preventDefault(); window.addPlayer(this.username.value, this.password.value); this.reset();" class="flex gap-2">
                                     <input type="text" name="username" required placeholder="Username" class="min-w-0 flex-1 bg-slate-900 border border-slate-600 text-white rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:border-brand-500">
                                     <input type="password" name="password" required placeholder="Password" class="min-w-0 flex-1 bg-slate-900 border border-slate-600 text-white rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:border-brand-500">
-                                    <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0">
+                                    <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0 text-sm">
                                         <i class="fa-solid fa-plus mr-1"></i> Add
                                     </button>
                                 </form>
@@ -1189,7 +1162,7 @@
                             </div>
                             <div class="p-4 border-b border-slate-700">
                                 <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value);" class="flex gap-2 w-full">
-                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 w-[140px] flex-shrink-0 text-sm">
+                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-emerald-500 flex-1 min-w-0 text-sm">
                                         <option value="Qualifier" ${state.adminStage === 'Qualifier' ? 'selected' : ''}>Qualifier</option>
                                         <option value="RO32" ${state.adminStage === 'RO32' ? 'selected' : ''}>RO32</option>
                                         <option value="RO16" ${state.adminStage === 'RO16' ? 'selected' : ''}>RO16</option>
@@ -1197,7 +1170,7 @@
                                         <option value="Final" ${state.adminStage === 'Final' ? 'selected' : ''}>Final</option>
                                         <option value="Grand Final" ${state.adminStage === 'Grand Final' ? 'selected' : ''}>Grand Final</option>
                                     </select>
-                                    <select name="mapMod" required onchange="window.changeAdminMod(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 w-[80px] flex-shrink-0 text-center text-sm">
+                                    <select name="mapMod" required onchange="window.changeAdminMod(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-emerald-500 flex-1 min-w-0 text-center text-sm">
                                         <option value="NM" ${state.adminMod === 'NM' ? 'selected' : ''}>NM</option>
                                         <option value="HD" ${state.adminMod === 'HD' ? 'selected' : ''}>HD</option>
                                         <option value="HR" ${state.adminMod === 'HR' ? 'selected' : ''}>HR</option>
@@ -1205,7 +1178,7 @@
                                         <option value="MM" ${state.adminMod === 'MM' ? 'selected' : ''}>MM</option>
                                         <option value="TB" ${state.adminMod === 'TB' ? 'selected' : ''}>TB</option>
                                     </select>
-                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap flex-1 text-sm">
+                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0 text-sm">
                                         <i class="fa-solid fa-plus mr-1"></i> Add
                                     </button>
                                 </form>
