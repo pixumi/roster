@@ -463,7 +463,7 @@
             let viewHTML = '';
 
             if (isQualifier) {
-                // Tampilan Lama Khusus QUALIFIER
+                // --- TAMPILAN QUALIFIER (TETAP SAMA SEPERTI SEBELUMNYA) ---
                 let mapHeaders = '';
                 currentStageMaps.forEach(map => {
                     if (map.mod === 'MM') {
@@ -548,91 +548,193 @@
                     </div>
                 `;
             } else {
-                // Tampilan ROSTER GRID (Bukan Qualifier)
-                let rosterHTML = '';
-                const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
+                // --- TAMPILAN ROSTER GRID BARU (Sejajar Horisontal) ---
                 
-                modOrder.forEach(mod => {
-                    const maps = currentStageMaps.filter(b => b.mod === mod);
-                    if (maps.length === 0) return;
+                // Helper pembuat tabel Grid Reguler (NM, HD, HR, DT, TB)
+                const generateRegularGrid = (modsArray) => {
+                    let mapsInGroup = [];
+                    modsArray.forEach(m => {
+                        mapsInGroup = mapsInGroup.concat(currentStageMaps.filter(b => b.mod === m));
+                    });
+                    
+                    if (mapsInGroup.length === 0) return '';
 
-                    let cardsHTML = '';
-                    maps.forEach(map => {
-                        const subMods = mod === 'MM' ? ['NM', 'HD', 'HR'] : [null];
-                        subMods.forEach(subMod => {
-                            const mapKey = subMod ? `${map.id}_${subMod}` : map.id;
-                            const mapTitle = subMod ? `${map.name} (${subMod})` : map.name;
-                            const stats = data.mapStats[mapKey] || [];
+                    let theadRows = '<tr>';
+                    let tcol1Rows = '<tr class="bg-slate-900 border-b border-black">';
+                    let bodyRows = ['', '', '', '']; // 3 Inti + 1 Backup
+                    let footRow = '<tr class="font-bold border-t border-black text-[13px] bg-white text-black">';
+
+                    mapsInGroup.forEach(map => {
+                        let bgColor = 'bg-slate-300';
+                        if(map.mod === 'NM') bgColor = 'bg-[#a9d18e]'; // Hijau Excel
+                        if(map.mod === 'HD') bgColor = 'bg-[#ffd966]'; // Kuning Excel
+                        if(map.mod === 'HR') bgColor = 'bg-[#ea9999]'; // Merah Excel
+                        if(map.mod === 'DT') bgColor = 'bg-[#9bc2e6]'; // Biru Excel
+                        if(map.mod === 'TB') bgColor = 'bg-slate-300';
+
+                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold text-center border-b border-r border-black px-2 py-1 text-sm tracking-widest">${map.name}</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-black border-b px-2 py-0.5 text-xs w-[120px]">Player</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-black border-b px-2 py-0.5 text-xs w-[80px]">Score</th>`;
+
+                        const stats = data.mapStats[map.id] || [];
+                        const top3 = stats.slice(0, 3);
+                        const backup = stats[3];
+                        const total = top3.reduce((sum, p) => sum + p.average, 0);
+
+                        for(let i=0; i<3; i++) {
+                            const p = top3[i];
+                            let cellBg = (i % 2 === 0) ? bgColor : bgColor.replace(']', ']/80'); // Selang-seling warna
                             
-                            let modColor = 'bg-slate-700 text-white border-slate-500';
-                            if(mod === 'NM') modColor = 'bg-emerald-400 text-emerald-950 border-emerald-500';
-                            if(mod === 'HD') modColor = 'bg-amber-500 text-amber-950 border-amber-600';
-                            if(mod === 'HR') modColor = 'bg-red-500 text-white border-red-600';
-                            if(mod === 'DT') modColor = 'bg-sky-400 text-sky-950 border-sky-500';
-                            if(mod === 'MM') {
-                                if(subMod === 'NM') modColor = 'bg-emerald-400 text-emerald-950 border-emerald-500';
-                                else if(subMod === 'HD') modColor = 'bg-amber-500 text-amber-950 border-amber-600';
-                                else if(subMod === 'HR') modColor = 'bg-red-500 text-white border-red-600';
-                                else modColor = 'bg-purple-500 text-white border-purple-600';
-                            }
-                            if(mod === 'TB') modColor = 'bg-slate-400 text-slate-900 border-slate-500';
-
-                            const top3 = stats.slice(0, 3);
-                            const backup = stats[3];
-                            const total = top3.reduce((sum, p) => sum + p.average, 0);
-
-                            let rows = '';
-                            for(let i=0; i<3; i++) {
-                                const p = top3[i];
-                                if (p) {
-                                    const playerObj = state.players.find(pl => pl.id === p.playerId);
-                                    rows += `<tr class="border-b border-slate-700/50 bg-slate-800"><td class="px-2.5 py-1.5 border-r border-slate-700/50 font-medium text-slate-200">${playerObj ? playerObj.username : 'Unknown'}</td><td class="px-2.5 py-1.5 text-right font-mono text-slate-300">${p.average.toLocaleString()}</td></tr>`;
-                                } else {
-                                    rows += `<tr class="border-b border-slate-700/50 bg-slate-800"><td class="px-2.5 py-1.5 border-r border-slate-700/50 text-slate-600">-</td><td class="px-2.5 py-1.5 text-right font-mono text-slate-600">-</td></tr>`;
-                                }
-                            }
-                            if (backup) {
-                                const playerObj = state.players.find(pl => pl.id === backup.playerId);
-                                rows += `<tr class="border-b border-slate-700 bg-slate-800/80"><td class="px-2.5 py-1 text-xs border-r border-slate-700/50 text-slate-400 italic">${playerObj ? playerObj.username : 'Unknown'} (Sub)</td><td class="px-2.5 py-1 text-right font-mono text-xs text-slate-400">${backup.average.toLocaleString()}</td></tr>`;
+                            if (p) {
+                                const pObj = state.players.find(pl => pl.id === p.playerId);
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black px-2 py-1 font-medium text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black px-2 py-1 text-right font-mono text-sm">${p.average.toLocaleString()}</td>`;
                             } else {
-                                rows += `<tr class="border-b border-slate-700 bg-slate-800/80"><td class="px-2.5 py-1 text-xs border-r border-slate-700/50 text-slate-600 italic">- (Sub)</td><td class="px-2.5 py-1 text-right font-mono text-xs text-slate-600">-</td></tr>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black px-2 py-1">-</td><td class="${cellBg} text-black border-r border-b border-black px-2 py-1 text-right font-mono">-</td>`;
                             }
+                        }
 
-                            cardsHTML += `
-                                <div class="flex-1 min-w-[200px] max-w-[280px] border border-slate-700 rounded-lg overflow-hidden shadow-lg mb-4">
-                                    <div class="${modColor.split(' ').slice(0,2).join(' ')} px-3 py-2 text-center font-extrabold text-sm uppercase tracking-wider">${mapTitle}</div>
-                                    <table class="w-full text-left text-sm border-collapse">
-                                        <thead>
-                                            <tr class="bg-slate-900 border-b border-slate-700">
-                                                <th class="px-2.5 py-1.5 font-semibold text-slate-400 border-r border-slate-700/50 w-1/2">Player</th>
-                                                <th class="px-2.5 py-1.5 font-semibold text-slate-400 text-right w-1/2">Score</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${rows}
-                                        </tbody>
-                                        <tfoot>
-                                            <tr class="${modColor.split(' ').slice(0,2).join(' ')} opacity-90 border-t ${modColor.split(' ')[2]}">
-                                                <td class="px-2.5 py-2 font-bold border-r border-black/10 text-right uppercase text-[11px]">Total Top 3</td>
-                                                <td class="px-2.5 py-2 font-bold font-mono text-right text-sm">${total.toLocaleString()}</td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            `;
-                        });
+                        // Baris 4 (Backup)
+                        let subBg = 'bg-[#e2efda]'; // Hijau muda pucat
+                        if(map.mod === 'HD') subBg = 'bg-[#fff2cc]';
+                        if(map.mod === 'HR') subBg = 'bg-[#f4cccc]';
+                        if(map.mod === 'DT') subBg = 'bg-[#ddebf7]';
+
+                        if (backup) {
+                            const pObj = state.players.find(pl => pl.id === backup.playerId);
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black px-2 py-1 text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black px-2 py-1 text-right font-mono text-sm">${backup.average.toLocaleString()}</td>`;
+                        } else {
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black px-2 py-1">-</td><td class="${subBg} text-black border-r border-b border-black px-2 py-1 text-right font-mono">-</td>`;
+                        }
+
+                        footRow += `<td colspan="2" class="${bgColor} text-black font-bold text-center border-r border-black px-2 py-1 font-mono">${total.toLocaleString()}</td>`;
                     });
 
-                    rosterHTML += `
-                        <div class="flex flex-wrap gap-3 mb-2">
-                            ${cardsHTML}
+                    theadRows += '</tr>';
+                    tcol1Rows += '</tr>';
+                    footRow += '</tr>';
+                    let combinedBody = bodyRows.map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
+
+                    return `
+                        <div class="overflow-x-auto w-full mb-6">
+                            <table class="border-collapse border border-black min-w-max bg-white shadow-xl mx-auto">
+                                <thead>${theadRows}${tcol1Rows}</thead>
+                                <tbody>${combinedBody}</tbody>
+                                <tfoot>${footRow}</tfoot>
+                            </table>
                         </div>
                     `;
-                });
+                }
+
+                // Helper pembuat tabel Grid Khusus MM
+                const generateMMGrid = () => {
+                    const mmMaps = currentStageMaps.filter(b => b.mod === 'MM');
+                    if (mmMaps.length === 0) return '';
+
+                    let theadRows = '<tr>';
+                    let tcol1Rows = '<tr class="border-b border-black">';
+                    let bodyRows = ['', '', '']; // 3 Baris: HR, HD, NM
+                    let footRow = '<tr class="font-bold border-t border-black text-[13px] text-black">';
+
+                    const bgColor = 'bg-[#c2c2f0]'; // Ungu pucat MM
+                    const hrColor = 'bg-[#ea9999]';
+                    const hdColor = 'bg-[#ffd966]';
+                    const nmColor = 'bg-[#a9d18e]';
+                    const backupColorHR = 'bg-[#f4cccc]';
+                    const backupColorHD = 'bg-[#fff2cc]';
+                    const backupColorNM = 'bg-[#e2efda]';
+
+                    mmMaps.forEach(map => {
+                        theadRows += `<th colspan="4" class="${bgColor} text-black font-bold text-center border-b border-r border-black px-2 py-1 text-sm tracking-widest">${map.name}</th>`;
+                        
+                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[120px]">Player</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[80px]">Score</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[100px]">Backup</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[80px]">Score</th>`;
+
+                        const statsHR = data.mapStats[`${map.id}_HR`] || [];
+                        const statsHD = data.mapStats[`${map.id}_HD`] || [];
+                        const statsNM = data.mapStats[`${map.id}_NM`] || [];
+
+                        // Array mod urutan rendering (Baris 1 HR, Baris 2 HD, Baris 3 NM)
+                        const rowsData = [
+                            { stats: statsHR, mainColor: hrColor, backColor: backupColorHR },
+                            { stats: statsHD, mainColor: hdColor, backColor: backupColorHD },
+                            { stats: statsNM, mainColor: nmColor, backColor: backupColorNM }
+                        ];
+
+                        let totalMap = 0;
+
+                        for(let i=0; i<3; i++) {
+                            const { stats, mainColor, backColor } = rowsData[i];
+                            const mainP = stats[0];
+                            const backupP = stats[1]; // Backup untuk subMod adalah rank #2 di map tsb
+
+                            if(mainP) totalMap += mainP.average;
+
+                            // Kolom Player Inti & Skor
+                            if (mainP) {
+                                const pObj = state.players.find(pl => pl.id === mainP.playerId);
+                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black px-2 py-1 font-medium text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black px-2 py-1 text-right font-mono text-sm">${mainP.average.toLocaleString()}</td>`;
+                            } else {
+                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black px-2 py-1">-</td><td class="${mainColor} text-black border-r border-b border-black px-2 py-1 text-right font-mono">-</td>`;
+                            }
+
+                            // Kolom Backup & Skor
+                            if (backupP) {
+                                const pObj = state.players.find(pl => pl.id === backupP.playerId);
+                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black px-2 py-1 text-sm truncate max-w-[100px]">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black px-2 py-1 text-right font-mono text-sm">${backupP.average.toLocaleString()}</td>`;
+                            } else {
+                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black px-2 py-1">-</td><td class="${backColor} text-black border-r border-b border-black px-2 py-1 text-right font-mono">-</td>`;
+                            }
+                        }
+
+                        footRow += `<td colspan="4" class="${bgColor} text-black font-bold text-center border-r border-black px-2 py-1 font-mono">${totalMap.toLocaleString()}</td>`;
+                    });
+
+                    theadRows += '</tr>';
+                    tcol1Rows += '</tr>';
+                    footRow += '</tr>';
+                    let combinedBody = bodyRows.map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
+
+                    return `
+                        <div class="overflow-x-auto w-full mb-6">
+                            <table class="border-collapse border border-black min-w-max bg-white shadow-xl mx-auto">
+                                <thead>${theadRows}${tcol1Rows}</thead>
+                                <tbody>${combinedBody}</tbody>
+                                <tfoot>${footRow}</tfoot>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                // Render per baris
+                const row1 = generateRegularGrid(['NM', 'DT']); // Baris 1: NM & DT sejajar
+                const row2 = generateRegularGrid(['HD', 'HR']); // Baris 2: HD & HR sejajar
+                
+                // Baris 3: MM dan TB sejajar
+                let row3 = '';
+                const mmGrid = generateMMGrid();
+                const tbGrid = generateRegularGrid(['TB']);
+                
+                if (mmGrid || tbGrid) {
+                    row3 = `
+                        <div class="flex flex-wrap items-start justify-center gap-0 w-full mb-6">
+                            <div class="flex-auto overflow-x-auto m-0 p-0">${mmGrid}</div>
+                            <div class="flex-auto overflow-x-auto m-0 p-0">${tbGrid}</div>
+                        </div>
+                    `;
+                }
+
+                let rosterHTML = row1 + row2 + row3;
 
                 if (currentStageMaps.length === 0) {
                     rosterHTML = `<div class="bg-slate-800 p-8 text-center text-slate-500 rounded-xl border border-slate-700">Belum ada map terdaftar di stage ini.</div>`;
                 }
+                
                 viewHTML = rosterHTML;
             }
 
@@ -647,13 +749,12 @@
                             <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>FINAL - ROSTER ▾</option>
                             <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>GRAND FINAL - ROSTER ▾</option>
                         </select>
-                        <p class="text-slate-400 text-sm">${isQualifier ? 'Peringkat didasarkan pada <b class="text-slate-200">Avg. Sum of Placements</b> terkecil di stage ini.' : 'Daftar 3 Player inti dan 1 Player cadangan (Sub) dengan skor tertinggi untuk setiap map.'}</p>
+                        <p class="text-slate-400 text-sm">${isQualifier ? 'Peringkat didasarkan pada <b class="text-slate-200">Avg. Sum of Placements</b> terkecil di stage ini.' : 'Daftar Player inti dan Player cadangan (Backup) dengan skor tertinggi untuk setiap map.'}</p>
                     </div>
                     ${viewHTML}
                 </div>
             `;
         }
-
         function renderSubmitScore() {
             const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === state.currentStage);
             const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
