@@ -68,7 +68,6 @@
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none"></div>
 
     <!-- Main App Container -->
-    <!-- Max-w diubah ke 7xl agar UI admin dashboard/tabel score melebar tidak memotong tombol -->
     <div id="app" class="flex-grow flex flex-col w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Content will be injected here by JavaScript -->
     </div>
@@ -193,6 +192,9 @@
         }
 
         window.removePlayer = async function(playerId) {
+            // POPUP KONFIRMASI HAPUS PLAYER
+            if (!confirm('Peringatan: Apakah Anda yakin ingin menghapus player ini? Seluruh data skor milik player ini akan ikut terhapus secara permanen.')) return;
+            
             if(API_URL) {
                 await fetch(`${API_URL}/players?id=${playerId}`, { method: 'DELETE' });
                 await fetchDatabase();
@@ -223,6 +225,9 @@
         }
 
         window.removeBeatmap = async function(beatmapId) {
+            // POPUP KONFIRMASI HAPUS MAPPOOL
+            if (!confirm('Peringatan: Apakah Anda yakin ingin menghapus beatmap ini? Seluruh data skor pada map ini akan ikut terhapus.')) return;
+            
             if(API_URL) {
                 await fetch(`${API_URL}/beatmaps?id=${beatmapId}`, { method: 'DELETE' });
                 await fetchDatabase();
@@ -238,7 +243,6 @@
             if (val.length > 0) {
                 if (val.startsWith('1')) {
                     if (val.length > 7) val = val.slice(0, 7);
-                    // UPDATE: Maximum 1300000
                     if (parseInt(val) > 1300000) val = '1300000';
                 } else {
                     if (val.length > 6) val = val.slice(0, 6);
@@ -247,7 +251,6 @@
             input.value = val;
         }
 
-        // UPDATE: saveScores sekarang mengirim data secara batch
         window.saveScores = async function(event, form) {
             event.preventDefault();
             const formData = new FormData(form);
@@ -283,7 +286,6 @@
             
             if (added > 0) {
                 if(API_URL) {
-                    // Kirim semua skor dalam 1 fetch request
                     await fetch(`${API_URL}/scores/batch`, { 
                         method: 'POST', 
                         headers: { 'Content-Type': 'application/json' },
@@ -313,12 +315,10 @@
                         let sum = 0;
                         let count = 0;
                         
-                        // Menarik data skor dari Run 1, 2, dan 3
                         for(let r=1; r<=3; r++) {
                             const exactKey = subMod ? `${map.id}_${r}_${subMod}` : `${map.id}_${r}`;
                             const playerRuns = state.scores.filter(s => s.player_id === player.id && s.map_key === exactKey);
                             if (playerRuns.length > 0) {
-                                // Ambil skor submission yang terbaru (jika disubmit berkali-kali)
                                 sum += playerRuns[playerRuns.length - 1].score; 
                                 count++;
                             }
@@ -458,84 +458,76 @@
         function renderLeaderboard() {
             const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === state.currentStage);
             const data = getLeaderboardData(currentStageMaps);
-            
-            let mapHeaders = '';
-            currentStageMaps.forEach(map => {
-                if (map.mod === 'MM') {
-                    mapHeaders += `
-                        <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} NM</th>
-                        <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} HD</th>
-                        <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} HR</th>
-                    `;
-                } else {
-                    let bgColor = 'bg-slate-700'; let textColor = 'text-white';
-                    if(map.mod === 'NM') { bgColor = 'bg-emerald-400'; textColor = 'text-emerald-950'; }
-                    if(map.mod === 'HD') { bgColor = 'bg-amber-500'; textColor = 'text-amber-950'; }
-                    if(map.mod === 'HR') { bgColor = 'bg-red-500'; textColor = 'text-white'; }
-                    if(map.mod === 'DT') { bgColor = 'bg-sky-400'; textColor = 'text-sky-950'; }
-                    if(map.mod === 'TB') { bgColor = 'bg-slate-400'; textColor = 'text-slate-900'; }
-                    
-                    mapHeaders += `<th class="px-4 py-3 text-sm font-extrabold ${textColor} ${bgColor} uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name}</th>`;
-                }
-            });
+            const isQualifier = state.currentStage === 'Qualifier';
 
-            let rows = data.rankings.map((player, index) => {
-                let mapCells = '';
+            let viewHTML = '';
+
+            if (isQualifier) {
+                // Tampilan Lama Khusus QUALIFIER
+                let mapHeaders = '';
                 currentStageMaps.forEach(map => {
-                    const subMods = map.mod === 'MM' ? ['NM', 'HD', 'HR'] : [null];
-                    subMods.forEach(subMod => {
-                        const mapKey = subMod ? `${map.id}_${subMod}` : map.id;
-                        const avg = player.mapAverages[mapKey];
-                        const rank = player.mapRanks[mapKey];
+                    if (map.mod === 'MM') {
+                        mapHeaders += `
+                            <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} NM</th>
+                            <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} HD</th>
+                            <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} HR</th>
+                        `;
+                    } else {
+                        let bgColor = 'bg-slate-700'; let textColor = 'text-white';
+                        if(map.mod === 'NM') { bgColor = 'bg-emerald-400'; textColor = 'text-emerald-950'; }
+                        if(map.mod === 'HD') { bgColor = 'bg-amber-500'; textColor = 'text-amber-950'; }
+                        if(map.mod === 'HR') { bgColor = 'bg-red-500'; textColor = 'text-white'; }
+                        if(map.mod === 'DT') { bgColor = 'bg-sky-400'; textColor = 'text-sky-950'; }
+                        if(map.mod === 'TB') { bgColor = 'bg-slate-400'; textColor = 'text-slate-900'; }
                         
-                        let cellClass = "px-3 py-2 whitespace-nowrap font-mono text-sm border-l border-slate-700/50 hover:bg-slate-700/80 transition ";
-                        
-                        if (avg !== null) {
-                            let rankColor = 'text-slate-500'; let scoreColor = 'text-slate-300';
-                            
-                            if (rank === 1) { rankColor = 'text-yellow-400 font-bold'; scoreColor = 'text-yellow-400 font-bold'; } 
-                            else if (rank === 2) { rankColor = 'text-slate-300 font-bold'; scoreColor = 'text-slate-100 font-bold'; } 
-                            else if (rank === 3) { rankColor = 'text-amber-600 font-bold'; scoreColor = 'text-amber-500 font-bold'; }
-                            
-                            mapCells += `<td class="${cellClass}">
-                                <div class="flex justify-between items-center w-full gap-2">
-                                    <span class="text-xs ${rankColor} w-6 text-left">#${rank}</span>
-                                    <span class="${scoreColor} flex-1 text-right">${avg.toLocaleString()}</span>
-                                </div>
-                            </td>`;
-                        } else {
-                            mapCells += `<td class="${cellClass} text-center text-slate-600 font-medium">-</td>`;
-                        }
-                    });
+                        mapHeaders += `<th class="px-4 py-3 text-sm font-extrabold ${textColor} ${bgColor} uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name}</th>`;
+                    }
                 });
 
-                return `
-                    <tr class="bg-slate-800 border-b border-slate-700/50 hover:bg-slate-750 transition">
-                        <td class="px-4 py-2 whitespace-nowrap text-sm font-bold text-slate-300 w-12 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">#${index + 1}</td>
-                        <td class="px-4 py-2 whitespace-nowrap font-bold text-white text-base sticky left-[48px] bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">${player.username}</td>
-                        <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-white bg-slate-900/40">${player.avgRank === 999 ? '-' : player.avgRank.toFixed(2)}</td>
-                        <td class="px-4 py-2 whitespace-nowrap text-center font-medium text-slate-300 bg-slate-900/40">${player.avgScore.toLocaleString()}</td>
-                        ${mapCells}
-                    </tr>
-                `;
-            }).join('');
+                let rows = data.rankings.map((player, index) => {
+                    let mapCells = '';
+                    currentStageMaps.forEach(map => {
+                        const subMods = map.mod === 'MM' ? ['NM', 'HD', 'HR'] : [null];
+                        subMods.forEach(subMod => {
+                            const mapKey = subMod ? `${map.id}_${subMod}` : map.id;
+                            const avg = player.mapAverages[mapKey];
+                            const rank = player.mapRanks[mapKey];
+                            
+                            let cellClass = "px-3 py-2 whitespace-nowrap font-mono text-sm border-l border-slate-700/50 hover:bg-slate-700/80 transition ";
+                            
+                            if (avg !== null) {
+                                let rankColor = 'text-slate-500'; let scoreColor = 'text-slate-300';
+                                
+                                if (rank === 1) { rankColor = 'text-yellow-400 font-bold'; scoreColor = 'text-yellow-400 font-bold'; } 
+                                else if (rank === 2) { rankColor = 'text-slate-300 font-bold'; scoreColor = 'text-slate-100 font-bold'; } 
+                                else if (rank === 3) { rankColor = 'text-amber-600 font-bold'; scoreColor = 'text-amber-500 font-bold'; }
+                                
+                                mapCells += `<td class="${cellClass}">
+                                    <div class="flex justify-between items-center w-full gap-2">
+                                        <span class="text-xs ${rankColor} w-6 text-left">#${rank}</span>
+                                        <span class="${scoreColor} flex-1 text-right">${avg.toLocaleString()}</span>
+                                    </div>
+                                </td>`;
+                            } else {
+                                mapCells += `<td class="${cellClass} text-center text-slate-600 font-medium">-</td>`;
+                            }
+                        });
+                    });
 
-            if (data.rankings.length === 0) rows = `<tr><td colspan="100%" class="px-6 py-8 text-center text-slate-500">Belum ada data pemain.</td></tr>`;
+                    return `
+                        <tr class="bg-slate-800 border-b border-slate-700/50 hover:bg-slate-750 transition">
+                            <td class="px-4 py-2 whitespace-nowrap text-sm font-bold text-slate-300 w-12 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">#${index + 1}</td>
+                            <td class="px-4 py-2 whitespace-nowrap font-bold text-white text-base sticky left-[48px] bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">${player.username}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-white bg-slate-900/40">${player.avgRank === 999 ? '-' : player.avgRank.toFixed(2)}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-center font-medium text-slate-300 bg-slate-900/40">${player.avgScore.toLocaleString()}</td>
+                            ${mapCells}
+                        </tr>
+                    `;
+                }).join('');
 
-            return `
-                <div class="fade-in w-full">
-                    <div class="flex flex-col mb-5">
-                        <select onchange="window.changeStage(this.value)" class="bg-transparent text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit">
-                            <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>QUALIFIER - PLAYER SCORES ▾</option>
-                            <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>RO32 - PLAYER SCORES ▾</option>
-                            <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>RO16 - PLAYER SCORES ▾</option>
-                            <option value="Semi Final" class="bg-slate-900 text-base" ${state.currentStage === 'Semi Final' ? 'selected' : ''}>SEMI FINAL - PLAYER SCORES ▾</option>
-                            <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>FINAL - PLAYER SCORES ▾</option>
-                            <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>GRAND FINAL - PLAYER SCORES ▾</option>
-                        </select>
-                        <p class="text-slate-400 text-sm">Peringkat didasarkan pada <b class="text-slate-200">Avg. Sum of Placements</b> terkecil di stage ini.</p>
-                    </div>
-                    
+                if (data.rankings.length === 0) rows = `<tr><td colspan="100%" class="px-6 py-8 text-center text-slate-500">Belum ada data pemain.</td></tr>`;
+
+                viewHTML = `
                     <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
                         <div class="overflow-x-auto custom-scrollbar pb-2">
                             <table class="w-full text-left border-collapse">
@@ -554,6 +546,110 @@
                             </table>
                         </div>
                     </div>
+                `;
+            } else {
+                // Tampilan ROSTER GRID (Bukan Qualifier)
+                let rosterHTML = '';
+                const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
+                
+                modOrder.forEach(mod => {
+                    const maps = currentStageMaps.filter(b => b.mod === mod);
+                    if (maps.length === 0) return;
+
+                    let cardsHTML = '';
+                    maps.forEach(map => {
+                        const subMods = mod === 'MM' ? ['NM', 'HD', 'HR'] : [null];
+                        subMods.forEach(subMod => {
+                            const mapKey = subMod ? `${map.id}_${subMod}` : map.id;
+                            const mapTitle = subMod ? `${map.name} (${subMod})` : map.name;
+                            const stats = data.mapStats[mapKey] || [];
+                            
+                            let modColor = 'bg-slate-700 text-white border-slate-500';
+                            if(mod === 'NM') modColor = 'bg-emerald-400 text-emerald-950 border-emerald-500';
+                            if(mod === 'HD') modColor = 'bg-amber-500 text-amber-950 border-amber-600';
+                            if(mod === 'HR') modColor = 'bg-red-500 text-white border-red-600';
+                            if(mod === 'DT') modColor = 'bg-sky-400 text-sky-950 border-sky-500';
+                            if(mod === 'MM') {
+                                if(subMod === 'NM') modColor = 'bg-emerald-400 text-emerald-950 border-emerald-500';
+                                else if(subMod === 'HD') modColor = 'bg-amber-500 text-amber-950 border-amber-600';
+                                else if(subMod === 'HR') modColor = 'bg-red-500 text-white border-red-600';
+                                else modColor = 'bg-purple-500 text-white border-purple-600';
+                            }
+                            if(mod === 'TB') modColor = 'bg-slate-400 text-slate-900 border-slate-500';
+
+                            const top3 = stats.slice(0, 3);
+                            const backup = stats[3];
+                            const total = top3.reduce((sum, p) => sum + p.average, 0);
+
+                            let rows = '';
+                            for(let i=0; i<3; i++) {
+                                const p = top3[i];
+                                if (p) {
+                                    const playerObj = state.players.find(pl => pl.id === p.playerId);
+                                    rows += `<tr class="border-b border-slate-700/50 bg-slate-800"><td class="px-2.5 py-1.5 border-r border-slate-700/50 font-medium text-slate-200">${playerObj ? playerObj.username : 'Unknown'}</td><td class="px-2.5 py-1.5 text-right font-mono text-slate-300">${p.average.toLocaleString()}</td></tr>`;
+                                } else {
+                                    rows += `<tr class="border-b border-slate-700/50 bg-slate-800"><td class="px-2.5 py-1.5 border-r border-slate-700/50 text-slate-600">-</td><td class="px-2.5 py-1.5 text-right font-mono text-slate-600">-</td></tr>`;
+                                }
+                            }
+                            if (backup) {
+                                const playerObj = state.players.find(pl => pl.id === backup.playerId);
+                                rows += `<tr class="border-b border-slate-700 bg-slate-800/80"><td class="px-2.5 py-1 text-xs border-r border-slate-700/50 text-slate-400 italic">${playerObj ? playerObj.username : 'Unknown'} (Sub)</td><td class="px-2.5 py-1 text-right font-mono text-xs text-slate-400">${backup.average.toLocaleString()}</td></tr>`;
+                            } else {
+                                rows += `<tr class="border-b border-slate-700 bg-slate-800/80"><td class="px-2.5 py-1 text-xs border-r border-slate-700/50 text-slate-600 italic">- (Sub)</td><td class="px-2.5 py-1 text-right font-mono text-xs text-slate-600">-</td></tr>`;
+                            }
+
+                            cardsHTML += `
+                                <div class="flex-1 min-w-[200px] max-w-[280px] border border-slate-700 rounded-lg overflow-hidden shadow-lg mb-4">
+                                    <div class="${modColor.split(' ').slice(0,2).join(' ')} px-3 py-2 text-center font-extrabold text-sm uppercase tracking-wider">${mapTitle}</div>
+                                    <table class="w-full text-left text-sm border-collapse">
+                                        <thead>
+                                            <tr class="bg-slate-900 border-b border-slate-700">
+                                                <th class="px-2.5 py-1.5 font-semibold text-slate-400 border-r border-slate-700/50 w-1/2">Player</th>
+                                                <th class="px-2.5 py-1.5 font-semibold text-slate-400 text-right w-1/2">Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${rows}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="${modColor.split(' ').slice(0,2).join(' ')} opacity-90 border-t ${modColor.split(' ')[2]}">
+                                                <td class="px-2.5 py-2 font-bold border-r border-black/10 text-right uppercase text-[11px]">Total Top 3</td>
+                                                <td class="px-2.5 py-2 font-bold font-mono text-right text-sm">${total.toLocaleString()}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            `;
+                        });
+                    });
+
+                    rosterHTML += `
+                        <div class="flex flex-wrap gap-3 mb-2">
+                            ${cardsHTML}
+                        </div>
+                    `;
+                });
+
+                if (currentStageMaps.length === 0) {
+                    rosterHTML = `<div class="bg-slate-800 p-8 text-center text-slate-500 rounded-xl border border-slate-700">Belum ada map terdaftar di stage ini.</div>`;
+                }
+                viewHTML = rosterHTML;
+            }
+
+            return `
+                <div class="fade-in w-full">
+                    <div class="flex flex-col mb-5">
+                        <select onchange="window.changeStage(this.value)" class="bg-transparent text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit">
+                            <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>QUALIFIER - PLAYER SCORES ▾</option>
+                            <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>RO32 - ROSTER ▾</option>
+                            <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>RO16 - ROSTER ▾</option>
+                            <option value="Semi Final" class="bg-slate-900 text-base" ${state.currentStage === 'Semi Final' ? 'selected' : ''}>SEMI FINAL - ROSTER ▾</option>
+                            <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>FINAL - ROSTER ▾</option>
+                            <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>GRAND FINAL - ROSTER ▾</option>
+                        </select>
+                        <p class="text-slate-400 text-sm">${isQualifier ? 'Peringkat didasarkan pada <b class="text-slate-200">Avg. Sum of Placements</b> terkecil di stage ini.' : 'Daftar 3 Player inti dan 1 Player cadangan (Sub) dengan skor tertinggi untuk setiap map.'}</p>
+                    </div>
+                    ${viewHTML}
                 </div>
             `;
         }
@@ -563,7 +659,6 @@
             const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
             let tableRows = '';
 
-            // Helper untuk memanggil data yang tersimpan agar tampil kembali di form
             function getScoreValue(mapId, run, subMod = null) {
                 const exactKey = subMod ? `${mapId}_${run}_${subMod}` : `${mapId}_${run}`;
                 const runs = state.scores.filter(s => s.player_id === state.currentUser.id && s.map_key === exactKey);
@@ -829,7 +924,7 @@
             if (!API_URL) {
                 state.players = [
                     { id: 'admin1', username: 'admin', password: 'admin', role: 'admin' },
-
+                    { id: 'p1', username: 'faker', password: '123', role: 'player' }
                 ];
                 const initialMaps = [
                     { id: 'nm1', stage: 'Qualifier', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier', mod: 'NM', name: 'NM4' },
