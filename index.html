@@ -68,7 +68,8 @@
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none"></div>
 
     <!-- Main App Container -->
-    <div id="app" class="flex-grow flex flex-col w-full max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Max-w diubah ke 7xl agar UI admin dashboard/tabel score melebar tidak memotong tombol -->
+    <div id="app" class="flex-grow flex flex-col w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Content will be injected here by JavaScript -->
     </div>
 
@@ -237,7 +238,8 @@
             if (val.length > 0) {
                 if (val.startsWith('1')) {
                     if (val.length > 7) val = val.slice(0, 7);
-                    if (parseInt(val) > 1000000) val = '1000000';
+                    // UPDATE: Maximum 1300000
+                    if (parseInt(val) > 1300000) val = '1300000';
                 } else {
                     if (val.length > 6) val = val.slice(0, 6);
                 }
@@ -245,45 +247,51 @@
             input.value = val;
         }
 
+        // UPDATE: saveScores sekarang mengirim data secara batch
         window.saveScores = async function(event, form) {
             event.preventDefault();
             const formData = new FormData(form);
             let added = 0;
-            let promises = [];
+            let batchData = [];
 
             for (let [key, value] of formData.entries()) {
                 if (!value || value.trim() === '') continue;
                 const score = Number(value);
                 if (isNaN(score) || score <= 0) continue;
 
-                // key yang terlempar formatnya: score_mapId_run atau score_mapId_run_subMod
-                // Kita potong kata "score_" di depannya
                 const mapKey = key.replace('score_', ''); 
 
                 if(API_URL) {
-                    promises.push(fetch(`${API_URL}/scores`, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ player_id: state.currentUser.id, map_key: mapKey, score: score }) 
-                    }));
+                    batchData.push({ player_id: state.currentUser.id, map_key: mapKey, score: score });
                 } else {
-                    state.scores.push({
-                        id: window.generateId(),
-                        player_id: state.currentUser.id,
-                        map_key: mapKey,
-                        score: score
-                    });
+                    const existingIdx = state.scores.findIndex(
+                        s => s.player_id === state.currentUser.id && s.map_key === mapKey
+                    );
+                    if (existingIdx !== -1) {
+                        state.scores[existingIdx].score = score;
+                    } else {
+                        state.scores.push({
+                            id: window.generateId(),
+                            player_id: state.currentUser.id,
+                            map_key: mapKey,
+                            score: score
+                        });
+                    }
                 }
                 added++;
             }
             
             if (added > 0) {
                 if(API_URL) {
-                    await Promise.all(promises);
+                    // Kirim semua skor dalam 1 fetch request
+                    await fetch(`${API_URL}/scores/batch`, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(batchData) 
+                    });
                     await fetchDatabase();
                 }
                 showToast(`Tersimpan: ${added} input skor Run ditambahkan.`, 'success');
-                // renderApp akan dipanggil kembali oleh fetchDatabase sehingga value tersimpan otomatis tampil
                 window.navigate('leaderboard');
             } else {
                 showToast('Tidak ada skor valid yang diinput.', 'warning');
@@ -695,7 +703,6 @@
             if (players.length === 0) playerRows = `<tr><td colspan="2" class="px-4 py-6 text-center text-slate-500">Tidak ada player terdaftar.</td></tr>`;
 
             const currentAdminStage = state.adminStage || 'Qualifier';
-            // PERBAIKAN FATAL: Memfilter beatmap berdasarkan stage aktif di dropdown
             const filteredBeatmaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === currentAdminStage);
 
             let beatmapRows = filteredBeatmaps.map(b => {
@@ -759,7 +766,7 @@
                             </div>
                             <div class="p-4 border-b border-slate-700">
                                 <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value, this.mapName.value); this.reset();" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-28 flex-shrink-0">
+                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-24 flex-shrink-0">
                                         <option value="Qualifier" ${currentAdminStage === 'Qualifier' ? 'selected' : ''}>Qualifier</option>
                                         <option value="RO32" ${currentAdminStage === 'RO32' ? 'selected' : ''}>RO32</option>
                                         <option value="RO16" ${currentAdminStage === 'RO16' ? 'selected' : ''}>RO16</option>
@@ -767,7 +774,7 @@
                                         <option value="Final" ${currentAdminStage === 'Final' ? 'selected' : ''}>Final</option>
                                         <option value="Grand Final" ${currentAdminStage === 'Grand Final' ? 'selected' : ''}>Grand Final</option>
                                     </select>
-                                    <select name="mapMod" required class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-20 flex-shrink-0">
+                                    <select name="mapMod" required class="bg-slate-900 border border-slate-600 text-white rounded-lg px-1 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-16 flex-shrink-0 text-center">
                                         <option value="NM">NM</option>
                                         <option value="HD">HD</option>
                                         <option value="HR">HR</option>
@@ -776,7 +783,7 @@
                                         <option value="TB">TB</option>
                                     </select>
                                     <input type="text" name="mapName" required placeholder="Nama Map (ex: NM5)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500">
-                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0">
+                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0">
                                         <i class="fa-solid fa-plus mr-1"></i> Add
                                     </button>
                                 </form>
@@ -822,7 +829,7 @@
             if (!API_URL) {
                 state.players = [
                     { id: 'admin1', username: 'admin', password: 'admin', role: 'admin' },
-                    { id: 'p1', username: 'faker', password: '123', role: 'player' }
+
                 ];
                 const initialMaps = [
                     { id: 'nm1', stage: 'Qualifier', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier', mod: 'NM', name: 'NM4' },
