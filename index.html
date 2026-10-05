@@ -85,7 +85,6 @@
         const state = {
             currentUser: null,
             view: 'login',
-            // Load state dropdown dari localStorage jika ada
             currentStage: localStorage.getItem('currentStage') || 'Qualifier',
             adminStage: localStorage.getItem('adminStage') || 'Qualifier',
             adminMod: localStorage.getItem('adminMod') || 'NM',
@@ -132,7 +131,6 @@
         window.changeAdminMod = function(mod) {
             state.adminMod = mod;
             localStorage.setItem('adminMod', mod);
-            // Tidak memanggil renderApp() agar teks yang sedang diketik tidak hilang
         }
 
         // --- DATABASE FETCH (CLOUDFLARE) ---
@@ -255,7 +253,7 @@
                 } else {
                     if (val.length > 6) val = val.slice(0, 6);
                 }
-                input.value = Number(val).toLocaleString('en-US'); // Format osu! (koma)
+                input.value = Number(val).toLocaleString('en-US'); 
             } else {
                 input.value = '';
             }
@@ -270,7 +268,6 @@
             for (let [key, value] of formData.entries()) {
                 if (!value || value.trim() === '') continue;
                 
-                // Menghilangkan koma sebelum mengubah jadi Number
                 const scoreStr = value.replace(/,/g, '');
                 const score = Number(scoreStr);
                 
@@ -518,7 +515,7 @@
                                 mapCells += `<td class="${cellClass}">
                                     <div class="flex justify-between items-center w-full gap-2">
                                         <span class="text-xs ${rankColor} w-6 text-left">#${rank}</span>
-                                        <span class="${scoreColor} flex-1 text-right">${avg.toLocaleString('en-US')}</span>
+                                        <span class="${scoreColor} flex-1 text-right font-bold">${avg.toLocaleString('en-US')}</span>
                                     </div>
                                 </td>`;
                             } else {
@@ -532,7 +529,7 @@
                             <td class="px-4 py-2 whitespace-nowrap text-sm font-bold text-slate-300 w-12 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">#${index + 1}</td>
                             <td class="px-4 py-2 whitespace-nowrap font-bold text-white text-base sticky left-[48px] bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">${player.username}</td>
                             <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-white bg-slate-900/40">${player.avgRank === 999 ? '-' : player.avgRank.toFixed(2)}</td>
-                            <td class="px-4 py-2 whitespace-nowrap text-center font-medium text-slate-300 bg-slate-900/40">${player.avgScore.toLocaleString('en-US')}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-slate-300 bg-slate-900/40">${player.avgScore.toLocaleString('en-US')}</td>
                             ${mapCells}
                         </tr>
                     `;
@@ -573,7 +570,7 @@
                     let theadRows = '<tr>';
                     let tcol1Rows = '<tr class="bg-slate-900 border-b border-black">';
                     let bodyRows = ['', '', '', ''];
-                    let footRow = '<tr class="font-bold border-t border-black text-[13px] bg-white text-black">';
+                    let footRow = '<tr class="border-t border-black text-[13px] bg-white text-black">';
 
                     mapsInGroup.forEach(map => {
                         let bgColor = 'bg-slate-300';
@@ -584,8 +581,8 @@
                         if(map.mod === 'TB') bgColor = 'bg-slate-300';
 
                         theadRows += `<th colspan="2" class="${bgColor} text-black font-bold text-center border-b border-r border-black px-2 py-1 text-sm tracking-widest">${map.name}</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-black border-b px-2 py-0.5 text-xs w-[120px]">Player</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-black border-b px-2 py-0.5 text-xs w-[80px]">Score</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center border-r border-black border-b px-2 py-0.5 text-xs w-[120px]">Player</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center border-r border-black border-b px-2 py-0.5 text-xs w-[80px]">Score</th>`;
 
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
@@ -619,7 +616,7 @@
                             bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black px-2 py-1">-</td><td class="${subBg} text-black border-r border-b border-black px-2 py-1 text-right font-mono">-</td>`;
                         }
 
-                        footRow += `<td colspan="2" class="${bgColor} text-black font-bold text-center border-r border-black px-2 py-1 font-mono">${total.toLocaleString('en-US')}</td>`;
+                        footRow += `<td colspan="2" class="${bgColor} text-black font-bold text-center border-r border-black px-2 py-1 font-mono text-[13px]">${total.toLocaleString('en-US')}</td>`;
                     });
 
                     theadRows += '</tr>';
@@ -648,7 +645,7 @@
                     let theadRows = '<tr>';
                     let tcol1Rows = '<tr class="border-b border-black">';
                     let bodyRows = ['', '', '']; 
-                    let footRow = '<tr class="font-bold border-t border-black text-[13px] text-black">';
+                    let footRow = '<tr class="border-t border-black text-[13px] text-black">';
 
                     const bgColor = 'bg-[#c2c2f0]'; 
                     const hrColor = 'bg-[#ea9999]';
@@ -661,10 +658,10 @@
                     mmMaps.forEach(map => {
                         theadRows += `<th colspan="4" class="${bgColor} text-black font-bold text-center border-b border-r border-black px-2 py-1 text-sm tracking-widest">${map.name}</th>`;
                         
-                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[120px]">Player</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[80px]">Score</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[100px]">Backup</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-semibold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[80px]">Score</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[120px]">Player</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[80px]">Score</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[100px]">Backup</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[80px]">Score</th>`;
 
                         const statsHR = data.mapStats[`${map.id}_HR`] || [];
                         const statsHD = data.mapStats[`${map.id}_HD`] || [];
@@ -676,14 +673,16 @@
                             { stats: statsNM, mainColor: nmColor, backColor: backupColorNM }
                         ];
 
-                        let totalMap = 0;
+                        let totalMapMain = 0;
+                        let totalMapBackup = 0;
 
                         for(let i=0; i<3; i++) {
                             const { stats, mainColor, backColor } = rowsData[i];
                             const mainP = stats[0];
                             const backupP = stats[1]; 
 
-                            if(mainP) totalMap += mainP.average;
+                            if(mainP) totalMapMain += mainP.average;
+                            if(backupP) totalMapBackup += backupP.average;
 
                             if (mainP) {
                                 const pObj = state.players.find(pl => pl.id === mainP.playerId);
@@ -702,19 +701,22 @@
                             }
                         }
 
-                        footRow += `<td colspan="4" class="${bgColor} text-black font-bold text-center border-r border-black px-2 py-1 font-mono">${totalMap.toLocaleString('en-US')}</td>`;
+                        // MM Total (2 Kolom digabung untuk Inti, 2 Kolom untuk Backup)
+                        footRow += `<td colspan="2" class="${bgColor} text-black font-bold text-center border-r border-black px-2 py-1 font-mono text-[13px]">${totalMapMain.toLocaleString('en-US')}</td>`;
+                        footRow += `<td colspan="2" class="${bgColor} text-black text-center border-r border-black px-2 py-1 font-mono text-[13px]">${totalMapBackup.toLocaleString('en-US')}</td>`;
                     });
 
                     // TB Map rendering in the same table (attached)
                     tbMaps.forEach(map => {
                         let tbBg = 'bg-slate-300';
                         theadRows += `<th colspan="2" class="${tbBg} text-black font-bold text-center border-b border-r border-black px-2 py-1 text-sm tracking-widest">${map.name}</th>`;
-                        tcol1Rows += `<th class="${tbBg} text-black font-semibold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[120px]">Player</th>`;
-                        tcol1Rows += `<th class="${tbBg} text-black font-semibold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[80px]">Score</th>`;
+                        tcol1Rows += `<th class="${tbBg} text-black font-bold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[120px]">Player</th>`;
+                        tcol1Rows += `<th class="${tbBg} text-black font-bold text-center border-r border-b border-black px-2 py-0.5 text-xs w-[80px]">Score</th>`;
 
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
                         const backup = stats[3];
+                        const totalTB = top3.reduce((sum, p) => sum + p.average, 0);
 
                         for(let i=0; i<3; i++) {
                             const p = top3[i];
@@ -727,20 +729,34 @@
                             }
                         }
 
-                        // TB Backup row di footRow
+                        // Total TB
+                        footRow += `<td colspan="2" class="${tbBg} text-black font-bold text-center border-r border-black px-2 py-1 font-mono text-[13px]">${totalTB.toLocaleString('en-US')}</td>`;
+                        
+                        // Menambahkan baris ke 4 khusus TB karena MM tidak punya baris ke 4 (hanya 3 baris Mod)
+                        if(!bodyRows[3]) bodyRows[3] = '';
+                        // Mengisi ruang kosong (colspan) di baris ke-4 untuk MM (karena MM berhenti di baris ke 3)
+                        const totalMMCols = mmMaps.length * 4;
+                        if(totalMMCols > 0) {
+                            bodyRows[3] += `<td colspan="${totalMMCols}" class="bg-[#e7e6e6] border-r border-black border-b"></td>`;
+                        }
+
+                        // TB Backup row (di render di baris ke-4, bukan footrow)
+                        let subBg = 'bg-[#e7e6e6]';
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            footRow += `<td class="${tbBg} text-black border-r border-black px-2 py-1 text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
-                            footRow += `<td class="${tbBg} text-black border-r border-black px-2 py-1 text-right font-mono text-sm">${backup.average.toLocaleString('en-US')}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-black border-b px-2 py-1 text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-black border-b px-2 py-1 text-right font-mono text-sm">${backup.average.toLocaleString('en-US')}</td>`;
                         } else {
-                            footRow += `<td class="${tbBg} text-black border-r border-black px-2 py-1">-</td><td class="${tbBg} text-black border-r border-black px-2 py-1 text-right font-mono">-</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-black border-b px-2 py-1">-</td><td class="${subBg} text-black border-r border-black border-b px-2 py-1 text-right font-mono">-</td>`;
                         }
                     });
 
                     theadRows += '</tr>';
                     tcol1Rows += '</tr>';
                     footRow += '</tr>';
-                    let combinedBody = bodyRows.map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
+                    
+                    // Filter baris ke-4 jika hanya ada MM dan tidak ada TB (mencegah baris kosong aneh)
+                    let combinedBody = bodyRows.filter(r => r !== '').map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
 
                     return `
                         <div class="overflow-x-auto max-w-full mb-6 mx-auto">
@@ -755,7 +771,7 @@
 
                 const row1 = generateRegularGrid(['NM', 'DT']); 
                 const row2 = generateRegularGrid(['HD', 'HR']); 
-                const row3 = generateMMAndTBGrid(); // MM dan TB sudah gabung di dalam fungsi ini
+                const row3 = generateMMAndTBGrid(); 
 
                 let rosterHTML = row1 + row2 + row3;
 
@@ -777,7 +793,6 @@
                             <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>FINAL - ROSTER ▾</option>
                             <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>GRAND FINAL - ROSTER ▾</option>
                         </select>
-                        <p class="text-slate-400 text-sm">${isQualifier ? 'Peringkat didasarkan pada <b class="text-slate-200">Avg. Sum of Placements</b> terkecil di stage ini.' : ''}</p>
                     </div>
                     ${viewHTML}
                 </div>
@@ -1052,7 +1067,6 @@
             if (!API_URL) {
                 state.players = [
                     { id: 'admin1', username: 'admin', password: 'admin', role: 'admin' },
-                    { id: 'p1', username: 'faker', password: '123', role: 'player' }
                 ];
                 const initialMaps = [
                     { id: 'nm1', stage: 'Qualifier', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier', mod: 'NM', name: 'NM4' },
