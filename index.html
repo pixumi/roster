@@ -3,509 +3,770 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>osu! Tournament Roster & Leaderboard</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Tournament Roster & Leaderboard</title>
+    
+    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            500: '#8b5cf6', // Violet 500
+                            600: '#7c3aed', // Violet 600
+                            900: '#4c1d95', // Violet 900
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        body {
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+        }
+        /* Custom scrollbar for better UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        
+        /* Fade in animation */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="antialiased min-h-screen flex flex-col">
 
-    <!-- LOGIN SCREEN -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 text-center">
-            <h1 class="text-3xl font-black tracking-wider text-pink-500">🎮 OSU! TOURNEY</h1>
-            <p class="text-slate-400 text-sm">Silakan login menggunakan username osu! kamu yang sudah didaftarkan oleh admin.</p>
-            
-            <div class="space-y-4 pt-4">
-                <input type="text" id="login-username" placeholder="Masukkan Username..." class="w-full bg-slate-800 border border-slate-700 px-4 py-3 rounded-xl text-white focus:outline-none focus:border-pink-500 text-center font-medium">
-                <button onclick="handleLogin()" class="w-full bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-pink-600/20">Masuk</button>
-            </div>
-            
-            <p id="login-error" class="text-red-400 text-sm hidden font-medium">Username tidak ditemukan. Hubungi Admin.</p>
-            <div class="pt-4 border-t border-slate-800 text-xs text-slate-500">
-                <p>Login sebagai <strong class="text-slate-400">admin</strong> untuk mengelola turnamen.</p>
-            </div>
-        </div>
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none"></div>
+
+    <!-- Main App Container -->
+    <div id="app" class="flex-grow flex flex-col w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Content will be injected here by JavaScript -->
     </div>
 
-    <!-- MAIN APP CONTANER (Hidden by default) -->
-    <div id="app-container" class="hidden flex-col min-h-screen">
-        
-        <!-- Header & Navigation -->
-        <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
-            <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center space-x-3">
-                    <span class="text-2xl font-black tracking-wider text-pink-500">🎮 OSU! TOURNAMENT</span>
-                </div>
-                
-                <nav class="flex items-center space-x-2 bg-slate-800/80 p-1.5 rounded-xl border border-slate-700">
-                    <button onclick="switchTab('leaderboard')" id="tab-leaderboard" class="px-4 py-2 rounded-lg font-medium text-sm transition bg-pink-600 text-white shadow">Leaderboard</button>
-                    <button onclick="switchTab('submit')" id="tab-submit" class="px-4 py-2 rounded-lg font-medium text-sm transition text-slate-300 hover:text-white">Submit Score</button>
-                    <button onclick="switchTab('manage')" id="tab-manage" class="px-4 py-2 rounded-lg font-medium text-sm transition text-slate-300 hover:text-white">Manage (Admin)</button>
-                </nav>
+    <!-- Footer -->
+    <footer class="py-6 text-center text-slate-500 text-sm mt-auto">
+        <p>&copy; 2026 Tournament Roster. Powered by HTML, CSS, & JS.</p>
+    </footer>
 
-                <!-- User Profile & Logout -->
-                <div class="flex items-center gap-3 bg-slate-800 pl-4 pr-1.5 py-1.5 rounded-xl border border-slate-700">
-                    <span class="text-sm font-semibold text-slate-300">👤 <span id="current-user-label" class="text-white ml-1">Admin</span></span>
-                    <button onclick="handleLogout()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-1.5 rounded-lg transition">Logout</button>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="max-w-7xl w-full mx-auto px-4 py-8 flex-grow">
-
-            <!-- 1. LEADERBOARD TAB -->
-            <section id="section-leaderboard" class="space-y-6">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">🏆 Qualifier Leaderboard</h1>
-                        <p class="text-slate-400 text-sm mt-1">Peringkat dihitung berdasarkan rata-rata placement (Avg. Sum of Placements) dari seluruh map.</p>
-                    </div>
-                </div>
-
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse whitespace-nowrap">
-                            <thead id="leaderboard-thead" class="bg-slate-800 text-xs uppercase tracking-wider text-slate-300 border-b border-slate-700">
-                                <!-- Di-generate lewat JS -->
-                            </thead>
-                            <tbody id="leaderboard-tbody" class="divide-y divide-slate-800/60 text-sm">
-                                <!-- Di-generate lewat JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 2. SUBMIT SCORE TAB -->
-            <section id="section-submit" class="space-y-6 hidden">
-                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-                    <h1 class="text-2xl font-bold tracking-tight text-white">📝 Spreadsheet Score Submission</h1>
-                    <p class="text-slate-400 text-sm mt-1">Masukkan skor kamu di bawah ini seperti tabel excel. Input dibatasi maksimal 6 digit (atau 7 digit jika bernilai 1.000.000).</p>
-                </div>
-
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                    <div class="mb-6 flex items-center justify-between">
-                        <div>
-                            <span class="text-slate-400 text-sm">Player:</span>
-                            <span id="active-player-name" class="text-lg font-bold text-pink-400 ml-2">Username</span>
-                        </div>
-                        <button onclick="saveScores()" class="bg-pink-600 hover:bg-pink-500 text-white font-medium px-6 py-2.5 rounded-xl transition shadow-lg shadow-pink-600/20">💾 Simpan Skor</button>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-800 text-xs text-slate-300 border-b border-slate-700">
-                                    <th class="p-3">Mod & Map</th>
-                                    <th class="p-3">Run / Percobaan</th>
-                                    <th class="p-3">Skor Player</th>
-                                </tr>
-                            </thead>
-                            <tbody id="submit-table-body" class="divide-y divide-slate-800/60 text-sm">
-                                <!-- Di-generate lewat JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 3. MANAGE TAB (ADMIN) -->
-            <section id="section-manage" class="space-y-8 hidden">
-                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-                    <h1 class="text-2xl font-bold tracking-tight text-white">⚙️ Admin Control Panel</h1>
-                    <p class="text-slate-400 text-sm mt-1">Kelola roster pemain dan map pool turnamen osu!.</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Manage Players -->
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-                        <h2 class="text-lg font-semibold text-white border-b border-slate-800 pb-3">👥 Kelola Player</h2>
-                        <div class="flex gap-2">
-                            <input type="text" id="new-player-input" placeholder="Username osu!..." class="flex-grow bg-slate-800 border border-slate-700 px-4 py-2.5 rounded-xl text-white focus:outline-none focus:border-pink-500 text-sm">
-                            <button onclick="addPlayer()" class="bg-pink-600 hover:bg-pink-500 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition">Tambah</button>
-                        </div>
-                        <div class="overflow-y-auto max-h-64 border border-slate-800 rounded-xl">
-                            <table class="w-full text-left text-sm">
-                                <tbody id="manage-players-tbody" class="divide-y divide-slate-800">
-                                    <!-- JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Manage Maps -->
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-                        <h2 class="text-lg font-semibold text-white border-b border-slate-800 pb-3">🗺️ Kelola Beatmap Pool</h2>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="new-map-name" placeholder="Nama Map (cth: NM5)" class="bg-slate-800 border border-slate-700 px-4 py-2.5 rounded-xl text-white focus:outline-none focus:border-pink-500 text-sm">
-                            <select id="new-map-mod" class="bg-slate-800 border border-slate-700 px-4 py-2.5 rounded-xl text-white focus:outline-none focus:border-pink-500 text-sm">
-                                <option value="NM">NM (NoMod)</option>
-                                <option value="HD">HD (Hidden)</option>
-                                <option value="HR">HR (HardRock)</option>
-                                <option value="DT">DT (DoubleTime)</option>
-                                <option value="MM">MM (MixedMod)</option>
-                                <option value="TB">TB (Tiebreaker)</option>
-                            </select>
-                        </div>
-                        <button onclick="addBeatmap()" class="w-full bg-pink-600 hover:bg-pink-500 text-white py-2.5 rounded-xl font-medium text-sm transition">Tambah Map</button>
-                        
-                        <div class="overflow-y-auto max-h-52 border border-slate-800 rounded-xl">
-                            <table class="w-full text-left text-sm">
-                                <tbody id="manage-maps-tbody" class="divide-y divide-slate-800">
-                                    <!-- JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-        </main>
-
-        <!-- Footer -->
-        <footer class="bg-slate-900 border-t border-slate-800 py-6 text-center text-slate-500 text-xs mt-auto">
-            <p>osu! Tournament Roster & Leaderboard System &bull; Powered by Cloudflare D1</p>
-        </footer>
-    </div>
-
-    <!-- Script Aplikasi & Database Sync -->
     <script>
-        // ⚠️️ MASUKKAN URL WORKER CLOUDFLARE KAMU DI SINI
-        const API_URL = ""; // Contoh: "https://roster-api.username.workers.dev"
+        // --- KONFIGURASI CLOUDFLARE WORKER API ---
+        // Nanti ganti string kosong ini dengan URL Cloudflare Worker kamu
+        // Contoh: 'https://roster-api.username.workers.dev'
+        const API_URL = ""; 
 
-        // State Aplikasi
-        let players = ["faker", "chovy", "showmaker"];
-        let beatmaps = [
-            { name: "NM1", mod: "NM" }, { name: "NM2", mod: "NM" }, { name: "NM3", mod: "NM" }, { name: "NM4", mod: "NM" },
-            { name: "HD1", mod: "HD" }, { name: "HD2", mod: "HD" }, { name: "HD3", mod: "HD" },
-            { name: "HR1", mod: "HR" }, { name: "HR2", mod: "HR" }, { name: "HR3", mod: "HR" },
-            { name: "DT1", mod: "DT" }, { name: "DT2", mod: "DT" }, { name: "DT3", mod: "DT" },
-            { name: "MM1", mod: "MM" }, { name: "MM2", mod: "MM" },
-            { name: "TB1", mod: "TB" }
-        ];
-        let scores = {};
-        
-        // Data Login (diambil dari localStorage jika ada)
-        let currentUser = localStorage.getItem("tourneyUser") || null;
+        // --- GLOBAL STATE ---
+        const state = {
+            currentUser: null,
+            view: 'login', // 'login', 'leaderboard', 'submit', 'admin'
+            players: [],
+            beatmaps: [],
+            scores: [] 
+        };
 
-        const modHeaderColors = { NM: "bg-emerald-600 text-white", HD: "bg-amber-600 text-white", HR: "bg-red-600 text-white", DT: "bg-sky-500 text-white", MM: "bg-purple-600 text-white", TB: "bg-slate-600 text-white" };
-        const modBadgeColors = { NM: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", HD: "bg-amber-500/20 text-amber-300 border-amber-500/30", HR: "bg-red-500/20 text-red-300 border-red-500/30", DT: "bg-sky-400/20 text-sky-300 border-sky-400/30", MM: "bg-purple-500/20 text-purple-300 border-purple-500/30", TB: "bg-slate-500/20 text-slate-300 border-slate-500/30" };
+        let isOnline = false;
 
-        // Handle Login Screen
-        function handleLogin() {
-            const input = document.getElementById("login-username").value.trim();
-            const err = document.getElementById("login-error");
-            
-            if (input === "admin" || players.includes(input)) {
-                currentUser = input;
-                localStorage.setItem("tourneyUser", currentUser);
-                err.classList.add("hidden");
-                checkAuthState();
-            } else {
-                err.classList.remove("hidden");
-            }
+        // --- UTILITIES ---
+        window.generateId = function() { return Math.random().toString(36).substr(2, 9); }
+
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            let bgColor = 'bg-blue-600';
+            let icon = '<i class="fa-solid fa-circle-info mr-2"></i>';
+            if (type === 'error') { bgColor = 'bg-red-600'; icon = '<i class="fa-solid fa-circle-exclamation mr-2"></i>'; } 
+            else if (type === 'success') { bgColor = 'bg-green-600'; icon = '<i class="fa-solid fa-circle-check mr-2"></i>'; } 
+            else if (type === 'warning') { bgColor = 'bg-yellow-600'; icon = '<i class="fa-solid fa-triangle-exclamation mr-2"></i>'; }
+            toast.className = `${bgColor} text-white px-5 py-3 rounded-lg shadow-xl mb-3 flex items-center transition-all duration-300 opacity-0 transform translate-x-10 pointer-events-auto z-50`;
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('opacity-0', 'translate-x-10'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-10');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        function handleLogout() {
-            currentUser = null;
-            localStorage.removeItem("tourneyUser");
-            document.getElementById("login-username").value = "";
-            checkAuthState();
-        }
-
-        function checkAuthState() {
-            const loginScreen = document.getElementById("login-screen");
-            const appContainer = document.getElementById("app-container");
-            const tabManage = document.getElementById("tab-manage");
-
-            if (currentUser) {
-                loginScreen.classList.add("hidden");
-                appContainer.classList.remove("hidden");
-                appContainer.classList.add("flex");
-                
-                document.getElementById("current-user-label").innerText = currentUser === "admin" ? "Administrator" : currentUser;
-                document.getElementById("active-player-name").innerText = currentUser === "admin" ? "Mode Admin (Tidak bisa submit score)" : currentUser;
-                
-                // Sembunyikan tab Manage jika bukan admin
-                if (currentUser === "admin") {
-                    tabManage.classList.remove("hidden");
-                    switchTab('manage');
-                } else {
-                    tabManage.classList.add("hidden");
-                    switchTab('leaderboard');
+        // --- DATABASE FETCH (CLOUDFLARE) ---
+        async function fetchDatabase() {
+            if (!API_URL) return; // Jika belum diset, gunakan memory lokal
+            try {
+                const response = await fetch(`${API_URL}/data`);
+                if(response.ok) {
+                    const data = await response.json();
+                    state.players = data.players || [];
+                    state.beatmaps = data.beatmaps || [];
+                    state.scores = data.scores || [];
+                    
+                    const modOrder = {'NM':1, 'HD':2, 'HR':3, 'DT':4, 'MM':5, 'TB':6};
+                    state.beatmaps.sort((a,b) => modOrder[a.mod] - modOrder[b.mod] || a.name.localeCompare(b.name));
+                    
+                    isOnline = true;
+                    renderApp();
                 }
-                
-                renderLeaderboard();
-                renderSubmitForm();
-                if(currentUser === 'admin') renderAdmin();
+            } catch (error) {
+                console.error("Gagal mengambil data dari Worker:", error);
+                isOnline = false;
+            }
+        }
+
+        // --- ACTIONS ---
+        window.login = function(username, password) {
+            const user = state.players.find(p => p.username === username && p.password === password);
+            if (user) {
+                state.currentUser = user;
+                state.view = 'leaderboard';
+                showToast(`Selamat datang, ${user.username}!`, 'success');
+                renderApp();
             } else {
-                loginScreen.classList.remove("hidden");
-                appContainer.classList.add("hidden");
-                appContainer.classList.remove("flex");
+                showToast('Username atau password salah!', 'error');
             }
         }
 
-        // Database Sync
-        async function loadDataFromDB() {
-            if (!API_URL) {
-                checkAuthState(); // Tetap jalankan auth meskipun offline
-                return;
-            }
-            try {
-                const res = await fetch(API_URL);
-                const data = await res.json();
-                if (data.players) players = data.players;
-                if (data.beatmaps) beatmaps = data.beatmaps;
-                if (data.scores) scores = data.scores;
-                checkAuthState();
-            } catch (err) {
-                console.error("Gagal memuat data:", err);
-                checkAuthState();
-            }
+        window.logout = function() {
+            state.currentUser = null;
+            state.view = 'login';
+            showToast('Anda telah logout.', 'info');
+            renderApp();
         }
 
-        async function saveDataToDB() {
-            if (!API_URL) return;
-            try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ players, beatmaps, scores })
-                });
-            } catch (err) {
-                console.error("Gagal menyimpan data:", err);
+        window.navigate = function(viewName) {
+            state.view = viewName;
+            renderApp();
+        }
+
+        // Simpan ke API
+        window.addPlayer = async function(username, password) {
+            if (state.players.some(p => p.username === username)) {
+                showToast('Username sudah digunakan!', 'error'); return;
             }
+            if(API_URL) {
+                await fetch(`${API_URL}/players`, { method: 'POST', body: JSON.stringify({username, password}) });
+                await fetchDatabase();
+            } else {
+                state.players.push({ id: window.generateId(), username, password, role: 'player' });
+                renderApp();
+            }
+            showToast('Player berhasil ditambahkan!', 'success');
         }
 
-        // Tab Switching
-        function switchTab(tab) {
-            ['leaderboard', 'submit', 'manage'].forEach(t => {
-                const sec = document.getElementById(`section-${t}`);
-                const btn = document.getElementById(`tab-${t}`);
-                if(sec) sec.classList.add('hidden');
-                if(btn) btn.className = "px-4 py-2 rounded-lg font-medium text-sm transition text-slate-300 hover:text-white";
-            });
-            document.getElementById(`section-${tab}`).classList.remove('hidden');
-            document.getElementById(`tab-${tab}`).className = "px-4 py-2 rounded-lg font-medium text-sm transition bg-pink-600 text-white shadow";
+        window.removePlayer = async function(playerId) {
+            if(API_URL) {
+                await fetch(`${API_URL}/players?id=${playerId}`, { method: 'DELETE' });
+                await fetchDatabase();
+            } else {
+                state.players = state.players.filter(p => p.id !== playerId);
+                state.scores = state.scores.filter(s => s.player_id !== playerId);
+                renderApp();
+            }
+            showToast('Player berhasil dihapus!', 'success');
         }
 
-        function validateInput(input) {
-            let val = input.value.replace(/\D/g, '');
-            if (val.length > 7) val = val.slice(0, 7);
-            if (val.length === 7 && parseInt(val) > 1000000) val = "1000000";
+        window.addBeatmap = async function(mod, name) {
+            if (!name.trim()) return showToast('Nama beatmap tidak boleh kosong!', 'error');
+            if(API_URL) {
+                await fetch(`${API_URL}/beatmaps`, { method: 'POST', body: JSON.stringify({mod, name}) });
+                await fetchDatabase();
+            } else {
+                state.beatmaps.push({ id: window.generateId(), mod, name });
+                const modOrder = {'NM':1, 'HD':2, 'HR':3, 'DT':4, 'MM':5, 'TB':6};
+                state.beatmaps.sort((a,b) => modOrder[a.mod] - modOrder[b.mod] || a.name.localeCompare(b.name));
+                renderApp();
+            }
+            showToast('Beatmap berhasil ditambahkan!', 'success');
+        }
+
+        window.removeBeatmap = async function(beatmapId) {
+            if(API_URL) {
+                await fetch(`${API_URL}/beatmaps?id=${beatmapId}`, { method: 'DELETE' });
+                await fetchDatabase();
+            } else {
+                state.beatmaps = state.beatmaps.filter(b => b.id !== beatmapId);
+                renderApp();
+            }
+            showToast('Beatmap berhasil dihapus!', 'success');
+        }
+
+        window.validateScore = function(input) {
+            let val = input.value.replace(/[^0-9]/g, '');
+            if (val.length > 0) {
+                if (val.startsWith('1')) {
+                    if (val.length > 7) val = val.slice(0, 7);
+                    if (parseInt(val) > 1000000) val = '1000000';
+                } else {
+                    if (val.length > 6) val = val.slice(0, 6);
+                }
+            }
             input.value = val;
         }
 
-        // Render Leaderboard
-        function renderLeaderboard() {
-            const thead = document.getElementById('leaderboard-thead');
-            const tbody = document.getElementById('leaderboard-tbody');
+        window.saveScores = async function(event, form) {
+            event.preventDefault();
+            const formData = new FormData(form);
+            let added = 0;
+            let promises = [];
 
-            let mapHeaders = beatmaps.map(m => `<th class="p-3 text-center border-l border-slate-800 ${modHeaderColors[m.mod] || 'bg-slate-700 text-white'}">${m.name}</th>`).join('');
-            thead.innerHTML = `<tr><th class="p-3 text-center w-12">#</th><th class="p-3">Player</th><th class="p-3 text-center">Avg. Rank</th><th class="p-3 text-center">Avg. Score</th>${mapHeaders}</tr>`;
+            for (let [key, value] of formData.entries()) {
+                if (!value || value.trim() === '') continue;
+                const score = Number(value);
+                if (isNaN(score) || score <= 0) continue;
 
-            if (players.length === 0 || beatmaps.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${4 + beatmaps.length}" class="p-6 text-center text-slate-500">Belum ada data player atau map.</td></tr>`;
-                return;
+                // key format: score_mapId or score_mapId_subMod
+                const parts = key.split('_');
+                const mapId = parts[1];
+                const subMod = parts[2] || null;
+                const mapKey = subMod ? `${mapId}_${subMod}` : mapId;
+
+                if(API_URL) {
+                    promises.push(fetch(`${API_URL}/scores`, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ player_id: state.currentUser.id, map_key: mapKey, score: score }) 
+                    }));
+                } else {
+                    state.scores.push({
+                        id: window.generateId(),
+                        player_id: state.currentUser.id,
+                        map_key: mapKey,
+                        score: score
+                    });
+                }
+                added++;
             }
+            
+            if (added > 0) {
+                if(API_URL) {
+                    await Promise.all(promises);
+                    await fetchDatabase();
+                }
+                showToast(`Tersimpan: ${added} input skor Run ditambahkan.`, 'success');
+                form.reset();
+                window.navigate('leaderboard');
+            } else {
+                showToast('Tidak ada skor valid yang diinput.', 'warning');
+            }
+        }
 
-            let playerStats = players.map(player => {
-                let totalScore = 0;
-                let mapCount = beatmaps.length;
-                let mapDetails = {};
+        // --- DATA PROCESSING (Menyesuaikan dengan struktur baru) ---
+        function getLeaderboardData() {
+            const playerList = state.players.filter(p => p.role === 'player');
+            const mapStats = {}; 
+            
+            state.beatmaps.forEach(map => {
+                const subMods = map.mod === 'MM' ? ['NM', 'HD', 'HR'] : [null];
+                subMods.forEach(subMod => {
+                    const mapKey = subMod ? `${map.id}_${subMod}` : map.id;
+                    mapStats[mapKey] = [];
+                    
+                    playerList.forEach(player => {
+                        // Ambil semua run untuk player dan map ini
+                        const playerRuns = state.scores.filter(s => s.player_id === player.id && s.map_key === mapKey);
+                        
+                        let avg = null;
+                        if (playerRuns.length > 0) {
+                            const sumScores = playerRuns.reduce((a, b) => a + b.score, 0);
+                            avg = Math.round(sumScores / playerRuns.length);
+                        }
 
-                beatmaps.forEach(map => {
-                    let avgMapScore = 0;
-                    if (map.mod === 'MM') {
-                        let s1 = parseInt(scores[`${player}_${map.name}_1_NM`] || 0);
-                        let s2 = parseInt(scores[`${player}_${map.name}_1_HD`] || 0);
-                        let s3 = parseInt(scores[`${player}_${map.name}_1_HR`] || 0);
-                        let validScores = [s1, s2, s3].filter(s => s > 0);
-                        avgMapScore = validScores.length ? validScores.reduce((a,b)=>a+b, 0) / validScores.length : 0;
+                        if (avg !== null) {
+                            mapStats[mapKey].push({ playerId: player.id, average: avg });
+                        }
+                    });
+                    
+                    mapStats[mapKey].sort((a, b) => b.average - a.average);
+                });
+            });
+
+            // Kalkulasi Placements
+            const rankings = playerList.map(player => {
+                let sumPlacements = 0;
+                let sumScores = 0;
+                let mapsPlayed = 0;
+                const mapAverages = {}; 
+                const mapRanks = {};
+                
+                Object.keys(mapStats).forEach(mapKey => {
+                    const mapRanking = mapStats[mapKey];
+                    const playerRankIndex = mapRanking.findIndex(p => p.playerId === player.id);
+                    
+                    if (playerRankIndex !== -1) {
+                        const rank = playerRankIndex + 1; 
+                        sumPlacements += rank;
+                        sumScores += mapRanking[playerRankIndex].average;
+                        mapsPlayed++;
+                        mapAverages[mapKey] = mapRanking[playerRankIndex].average;
+                        mapRanks[mapKey] = rank;
                     } else {
-                        let r1 = parseInt(scores[`${player}_${map.name}_1`] || 0);
-                        let r2 = parseInt(scores[`${player}_${map.name}_2`] || 0);
-                        let r3 = parseInt(scores[`${player}_${map.name}_3`] || 0);
-                        let validScores = [r1, r2, r3].filter(s => s > 0);
-                        avgMapScore = validScores.length ? validScores.reduce((a,b)=>a+b, 0) / validScores.length : 0;
-                    }
-                    mapDetails[map.name] = avgMapScore;
-                    totalScore += avgMapScore;
-                });
-                return { player, mapDetails, avgScore: mapCount ? Math.round(totalScore / mapCount) : 0, avgRank: 0 };
-            });
-
-            let mapPlacements = {};
-            beatmaps.forEach(map => {
-                let sortedByMap = [...playerStats].sort((a,b) => b.mapDetails[map.name] - a.mapDetails[map.name]);
-                mapPlacements[map.name] = {};
-                let currentRank = 0, lastScore = -1;
-                sortedByMap.forEach((p, idx) => {
-                    let sc = p.mapDetails[map.name];
-                    if (sc === 0) { mapPlacements[map.name][p.player] = '-'; } 
-                    else {
-                        if (sc !== lastScore) { currentRank = idx + 1; lastScore = sc; }
-                        mapPlacements[map.name][p.player] = currentRank;
+                        mapAverages[mapKey] = null;
+                        mapRanks[mapKey] = null;
                     }
                 });
+                
+                const avgRank = mapsPlayed > 0 ? (sumPlacements / mapsPlayed) : 999; 
+                const avgScore = mapsPlayed > 0 ? Math.round(sumScores / mapsPlayed) : 0;
+                
+                return {
+                    id: player.id, username: player.username,
+                    avgRank, avgScore, mapAverages, mapRanks, mapsPlayed
+                };
             });
 
-            playerStats.forEach(p => {
-                let rankSum = 0;
-                beatmaps.forEach(map => {
-                    let r = mapPlacements[map.name][p.player];
-                    rankSum += (r === '-' ? players.length : r);
+            rankings.sort((a, b) => {
+                if (a.avgRank !== b.avgRank) return a.avgRank - b.avgRank;
+                return b.avgScore - a.avgScore; 
+            });
+
+            return { rankings, mapStats };
+        }
+
+        // --- UI RENDERING COMPONENTS ---
+        function renderNavbar() {
+            if (!state.currentUser) return '';
+            const navLinks = `
+                <button onclick="window.navigate('leaderboard')" class="${state.view === 'leaderboard' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition mx-2 py-2">
+                    <i class="fa-solid fa-trophy mr-1"></i> Leaderboard
+                </button>
+                ${state.currentUser.role === 'player' ? `
+                    <button onclick="window.navigate('submit')" class="${state.view === 'submit' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition mx-2 py-2">
+                        <i class="fa-solid fa-upload mr-1"></i> Submit Score
+                    </button>
+                ` : ''}
+                ${state.currentUser.role === 'admin' ? `
+                    <button onclick="window.navigate('admin')" class="${state.view === 'admin' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition mx-2 py-2">
+                        <i class="fa-solid fa-gear mr-1"></i> Manage
+                    </button>
+                ` : ''}
+            `;
+
+            return `
+                <nav class="bg-slate-800 border-b border-slate-700 py-4 mb-8 rounded-b-xl shadow-lg">
+                    <div class="flex flex-col sm:flex-row justify-between items-center px-6">
+                        <div class="text-xl font-bold tracking-wider text-brand-500 mb-4 sm:mb-0 flex items-center">
+                            <i class="fa-solid fa-gamepad mr-2"></i>ROSTER HUB
+                            ${API_URL === '' ? '<span class="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-triangle-exclamation"></i> Offline Mode</span>' : 
+                            (isOnline ? '<span class="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-cloud"></i> Online</span>' : '<span class="text-xs bg-red-500/20 text-red-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-cloud-arrow-down"></i> Error</span>')}
+                        </div>
+                        <div class="flex items-center gap-2 sm:gap-6">
+                            ${navLinks}
+                        </div>
+                        <div class="mt-4 sm:mt-0 flex items-center bg-slate-700 px-4 py-2 rounded-full">
+                            <i class="fa-solid fa-user-circle text-xl text-slate-300 mr-2"></i>
+                            <span class="mr-4 font-medium">${state.currentUser.username} <span class="text-xs text-brand-400">(${state.currentUser.role})</span></span>
+                            <button onclick="window.logout()" class="text-red-400 hover:text-red-300 transition" title="Logout">
+                                <i class="fa-solid fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </nav>
+            `;
+        }
+
+        function renderLogin() {
+            return `
+                <div class="flex-grow flex items-center justify-center fade-in pt-10">
+                    <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md">
+                        <div class="text-center mb-8">
+                            <i class="fa-solid fa-gamepad text-5xl text-brand-500 mb-3"></i>
+                            <h2 class="text-3xl font-bold">Tournament Login</h2>
+                            <p class="text-slate-400 mt-2">Silakan login untuk submit skor atau kelola turnamen.</p>
+                        </div>
+                        
+                        <div class="bg-slate-700 p-3 rounded-lg text-xs text-slate-300 mb-6 border border-slate-600">
+                            <p class="font-bold text-brand-400 mb-1">Mode Offline Aktif:</p>
+                            <p>Kamu harus mengatur API_URL untuk cloud save. Saat ini gunakan akun lokal:</p>
+                            <ul class="list-disc list-inside mt-1">
+                                <li>Admin: <b>admin</b> | pass: <b>admin</b></li>
+                                <li>Player: <b>faker</b> | pass: <b>123</b></li>
+                            </ul>
+                        </div>
+
+                        <form onsubmit="event.preventDefault(); window.login(this.username.value, this.password.value);" class="space-y-5">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Username</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-user"></i></div>
+                                    <input type="text" name="username" required class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="Masukkan username">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Password</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-lock"></i></div>
+                                    <input type="password" name="password" required class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="Masukkan password">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-brand-500/30 transition duration-200">
+                                Login Sekarang
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderLeaderboard() {
+            const data = getLeaderboardData();
+            
+            let mapHeaders = '';
+            state.beatmaps.forEach(map => {
+                if (map.mod === 'MM') {
+                    mapHeaders += `
+                        <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} NM</th>
+                        <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} HD</th>
+                        <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} HR</th>
+                    `;
+                } else {
+                    let bgColor = 'bg-slate-700'; let textColor = 'text-white';
+                    if(map.mod === 'NM') { bgColor = 'bg-emerald-400'; textColor = 'text-emerald-950'; }
+                    if(map.mod === 'HD') { bgColor = 'bg-amber-500'; textColor = 'text-amber-950'; }
+                    if(map.mod === 'HR') { bgColor = 'bg-red-500'; textColor = 'text-white'; }
+                    if(map.mod === 'DT') { bgColor = 'bg-sky-400'; textColor = 'text-sky-950'; }
+                    if(map.mod === 'TB') { bgColor = 'bg-slate-400'; textColor = 'text-slate-900'; }
+                    
+                    mapHeaders += `<th class="px-4 py-3 text-sm font-extrabold ${textColor} ${bgColor} uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name}</th>`;
+                }
+            });
+
+            let rows = data.rankings.map((player, index) => {
+                let mapCells = '';
+                state.beatmaps.forEach(map => {
+                    const subMods = map.mod === 'MM' ? ['NM', 'HD', 'HR'] : [null];
+                    subMods.forEach(subMod => {
+                        const mapKey = subMod ? `${map.id}_${subMod}` : map.id;
+                        const avg = player.mapAverages[mapKey];
+                        const rank = player.mapRanks[mapKey];
+                        
+                        let cellClass = "px-3 py-2 whitespace-nowrap font-mono text-sm border-l border-slate-700/50 hover:bg-slate-700/80 transition ";
+                        
+                        if (avg !== null) {
+                            let rankColor = 'text-slate-500'; let scoreColor = 'text-slate-300';
+                            
+                            if (rank === 1) { rankColor = 'text-yellow-400 font-bold'; scoreColor = 'text-yellow-400 font-bold'; } 
+                            else if (rank === 2) { rankColor = 'text-slate-300 font-bold'; scoreColor = 'text-slate-100 font-bold'; } 
+                            else if (rank === 3) { rankColor = 'text-amber-600 font-bold'; scoreColor = 'text-amber-500 font-bold'; }
+                            
+                            mapCells += `<td class="${cellClass}">
+                                <div class="flex justify-between items-center w-full gap-2">
+                                    <span class="text-xs ${rankColor} w-6 text-left">#${rank}</span>
+                                    <span class="${scoreColor} flex-1 text-right">${avg.toLocaleString()}</span>
+                                </div>
+                            </td>`;
+                        } else {
+                            mapCells += `<td class="${cellClass} text-center text-slate-600 font-medium">-</td>`;
+                        }
+                    });
                 });
-                p.avgRank = beatmaps.length ? (rankSum / beatmaps.length) : 0;
-            });
-            playerStats.sort((a, b) => a.avgRank - b.avgRank);
-
-            tbody.innerHTML = playerStats.map((p, idx) => {
-                let mapCells = beatmaps.map(map => {
-                    let sc = p.mapDetails[map.name];
-                    let rank = mapPlacements[map.name][p.player];
-                    if (sc === 0) return `<td class="p-3 text-center border-l border-slate-800 text-slate-600">-</td>`;
-                    let rankColor = rank === 1 ? 'text-amber-400 font-bold' : rank === 2 ? 'text-slate-300 font-semibold' : rank === 3 ? 'text-orange-400 font-semibold' : 'text-slate-400';
-                    return `<td class="p-3 text-center border-l border-slate-800"><span class="text-xs ${rankColor} mr-1.5">#${rank}</span><span class="text-white">${sc.toLocaleString()}</span></td>`;
-                }).join('');
 
                 return `
-                    <tr class="hover:bg-slate-800/40 transition">
-                        <td class="p-3 font-semibold text-slate-400">#${idx + 1}</td>
-                        <td class="p-3 font-bold text-white">${p.player}</td>
-                        <td class="p-3 text-center font-semibold text-pink-400">${p.avgRank.toFixed(2)}</td>
-                        <td class="p-3 text-center text-slate-300">${p.avgScore.toLocaleString()}</td>
+                    <tr class="bg-slate-800 border-b border-slate-700/50 hover:bg-slate-750 transition">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-bold text-slate-300 w-12 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">#${index + 1}</td>
+                        <td class="px-4 py-2 whitespace-nowrap font-bold text-white text-base sticky left-[48px] bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">${player.username}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-white bg-slate-900/40">${player.avgRank === 999 ? '-' : player.avgRank.toFixed(2)}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-center font-medium text-slate-300 bg-slate-900/40">${player.avgScore.toLocaleString()}</td>
                         ${mapCells}
                     </tr>
                 `;
             }).join('');
+
+            if (data.rankings.length === 0) rows = `<tr><td colspan="100%" class="px-6 py-8 text-center text-slate-500">Belum ada data pemain.</td></tr>`;
+
+            return `
+                <div class="fade-in w-full">
+                    <div class="flex flex-col mb-5">
+                        <h2 class="text-3xl font-bold text-white mb-1 uppercase tracking-tight">QUALIFIER - PLAYER SCORES</h2>
+                        <p class="text-slate-400 text-sm">Peringkat didasarkan pada <b class="text-slate-200">Avg. Sum of Placements</b> terkecil.</p>
+                    </div>
+                    
+                    <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
+                        <div class="overflow-x-auto custom-scrollbar pb-2">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-900">
+                                    <tr>
+                                        <th class="px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center sticky left-0 bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">#</th>
+                                        <th class="px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider sticky left-[48px] bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] min-w-[150px]">Player</th>
+                                        <th class="px-4 py-4 text-xs font-bold text-white bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap">Avg. <i class="fa-solid fa-sort-down align-top ml-1 text-brand-400"></i></th>
+                                        <th class="px-4 py-4 text-xs font-semibold text-slate-300 bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap border-r border-slate-700">Avg. Score</th>
+                                        ${mapHeaders}
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-700">
+                                    ${rows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
-        // Render Submit Form
-        function renderSubmitForm() {
-            const tbody = document.getElementById('submit-table-body');
+        function renderSubmitScore() {
+            const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
+            let tableRows = '';
+
+            modOrder.forEach(mod => {
+                const maps = state.beatmaps.filter(b => b.mod === mod);
+                if (maps.length === 0) return;
+
+                let modColor = 'text-white';
+                if(mod === 'NM') modColor = 'text-emerald-400';
+                if(mod === 'HD') modColor = 'text-amber-500';
+                if(mod === 'HR') modColor = 'text-red-500';
+                if(mod === 'DT') modColor = 'text-sky-400';
+                if(mod === 'MM') modColor = 'text-purple-500';
+                if(mod === 'TB') modColor = 'text-slate-400';
+
+                tableRows += `
+                    <tr class="bg-slate-900 border-b border-slate-700">
+                        <td colspan="2" class="px-6 py-3 font-bold ${modColor} text-lg">
+                            <i class="fa-solid fa-layer-group mr-2"></i> ${mod} Pool
+                        </td>
+                    </tr>
+                `;
+
+                maps.forEach(map => {
+                    if (mod === 'MM') {
+                        tableRows += `
+                            <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition flex flex-col sm:table-row">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-200 sm:w-1/4 sm:border-r sm:border-slate-700/50">${map.name}</td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-wrap gap-4 w-fit">
+                                        <div class="flex flex-col items-center">
+                                            <label class="block text-xs font-bold text-emerald-400 mb-1">NM Score</label>
+                                            <input type="text" name="score_${map.id}_NM" oninput="window.validateScore(this)" class="w-24 bg-slate-900 border border-slate-600 text-white rounded px-2 py-2 focus:outline-none focus:border-brand-500 font-mono text-sm text-center" placeholder="0">
+                                        </div>
+                                        <div class="flex flex-col items-center">
+                                            <label class="block text-xs font-bold text-amber-500 mb-1">HD Score</label>
+                                            <input type="text" name="score_${map.id}_HD" oninput="window.validateScore(this)" class="w-24 bg-slate-900 border border-slate-600 text-white rounded px-2 py-2 focus:outline-none focus:border-brand-500 font-mono text-sm text-center" placeholder="0">
+                                        </div>
+                                        <div class="flex flex-col items-center">
+                                            <label class="block text-xs font-bold text-red-500 mb-1">HR Score</label>
+                                            <input type="text" name="score_${map.id}_HR" oninput="window.validateScore(this)" class="w-24 bg-slate-900 border border-slate-600 text-white rounded px-2 py-2 focus:outline-none focus:border-brand-500 font-mono text-sm text-center" placeholder="0">
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-2">* Isi salah satu mod yang dimainkan pada run ini.</p>
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        tableRows += `
+                            <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition flex flex-col sm:table-row">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-200 sm:w-1/4 sm:border-r sm:border-slate-700/50">${map.name}</td>
+                                <td class="px-6 py-2 sm:py-4">
+                                    <div class="relative w-32">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 font-bold">#</div>
+                                        <input type="text" name="score_${map.id}" oninput="window.validateScore(this)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-8 pr-2 py-2 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-mono text-sm text-left" placeholder="0">
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            return `
+                <div class="fade-in max-w-4xl mx-auto w-full">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
+                        <div>
+                            <h2 class="text-3xl font-bold text-white mb-2">Form Submission Skor (Run)</h2>
+                            <p class="text-slate-400 text-sm">Isi skor pada map yang dimainkan. Submit beberapa kali pada map yang sama akan dihitung <b>rata-ratanya</b>.</p>
+                        </div>
+                    </div>
+                    
+                    <form onsubmit="window.saveScores(event, this)" class="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-900 hidden sm:table-header-group">
+                                    <tr>
+                                        <th class="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-1/4 border-r border-slate-700">Map ID</th>
+                                        <th class="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Input Skor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="p-6 bg-slate-900 border-t border-slate-700 flex justify-end">
+                            <button type="submit" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 transition duration-200 flex items-center justify-center">
+                                <i class="fa-solid fa-paper-plane mr-2"></i> Submit Run
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+        }
+
+        function renderAdmin() {
+            const players = state.players.filter(p => p.role === 'player');
+            let playerRows = players.map(p => `
+                <tr class="border-b border-slate-700 hover:bg-slate-700/50 transition">
+                    <td class="px-4 py-3 whitespace-nowrap font-medium text-white">${p.username}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                        <button onclick="window.removePlayer('${p.id}')" class="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1 rounded transition text-sm">
+                            <i class="fa-solid fa-trash mr-1"></i> Hapus
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            if (players.length === 0) playerRows = `<tr><td colspan="2" class="px-4 py-6 text-center text-slate-500">Tidak ada player terdaftar.</td></tr>`;
+
+            let beatmapRows = state.beatmaps.map(b => {
+                let badgeColor = 'bg-slate-600 text-white';
+                if(b.mod === 'NM') badgeColor = 'bg-emerald-400 text-emerald-950';
+                if(b.mod === 'HD') badgeColor = 'bg-amber-500 text-amber-950';
+                if(b.mod === 'HR') badgeColor = 'bg-red-500 text-white';
+                if(b.mod === 'DT') badgeColor = 'bg-sky-400 text-sky-950';
+                if(b.mod === 'MM') badgeColor = 'bg-purple-500 text-white';
+                if(b.mod === 'TB') badgeColor = 'bg-slate-400 text-slate-900';
+
+                return `
+                <tr class="border-b border-slate-700 hover:bg-slate-700/50 transition">
+                    <td class="px-4 py-3 whitespace-nowrap text-white">
+                        <span class="${badgeColor} text-xs font-bold px-2 py-1 rounded mr-2">${b.mod}</span>
+                        <span class="font-medium">${b.name}</span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                        <button onclick="window.removeBeatmap('${b.id}')" class="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1 rounded transition text-sm">
+                            <i class="fa-solid fa-trash mr-1"></i>
+                        </button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+            if (state.beatmaps.length === 0) beatmapRows = `<tr><td colspan="2" class="px-4 py-6 text-center text-slate-500">Tidak ada beatmap terdaftar.</td></tr>`;
+
+            return `
+                <div class="fade-in w-full">
+                    <h2 class="text-3xl font-bold text-white mb-8">Admin Dashboard</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        
+                        <div class="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden flex flex-col">
+                            <div class="p-6 bg-slate-900 border-b border-slate-700">
+                                <h3 class="text-xl font-bold text-brand-400 flex items-center">
+                                    <i class="fa-solid fa-users mr-3"></i> Manage Players
+                                </h3>
+                            </div>
+                            <div class="p-6 border-b border-slate-700">
+                                <form onsubmit="event.preventDefault(); window.addPlayer(this.username.value, this.password.value); this.reset();" class="flex gap-3">
+                                    <input type="text" name="username" required placeholder="Username Player" class="flex-1 bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500">
+                                    <input type="password" name="password" required placeholder="Password" class="flex-1 bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500">
+                                    <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg transition font-medium whitespace-nowrap">
+                                        <i class="fa-solid fa-plus mr-1"></i> Add
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="flex-grow overflow-auto max-h-96 custom-scrollbar">
+                                <table class="w-full">
+                                    <tbody class="divide-y divide-slate-700">${playerRows}</tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden flex flex-col">
+                            <div class="p-6 bg-slate-900 border-b border-slate-700">
+                                <h3 class="text-xl font-bold text-emerald-400 flex items-center">
+                                    <i class="fa-solid fa-music mr-3"></i> Manage Mappool
+                                </h3>
+                            </div>
+                            <div class="p-4 border-b border-slate-700">
+                                <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapMod.value, this.mapName.value); this.reset();" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                                    <select name="mapMod" required class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-24">
+                                        <option value="NM">NM</option>
+                                        <option value="HD">HD</option>
+                                        <option value="HR">HR</option>
+                                        <option value="DT">DT</option>
+                                        <option value="MM">MM</option>
+                                        <option value="TB">TB</option>
+                                    </select>
+                                    <input type="text" name="mapName" required placeholder="Nama Map (ex: NM5)" class="flex-1 bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500">
+                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg transition font-medium whitespace-nowrap">
+                                        <i class="fa-solid fa-plus mr-1"></i> Add
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="flex-grow overflow-auto max-h-96 custom-scrollbar">
+                                <table class="w-full">
+                                    <tbody class="divide-y divide-slate-700">${beatmapRows}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderApp() {
+            const appDiv = document.getElementById('app');
             
-            if (currentUser === 'admin') {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-8 text-center text-slate-500">Admin tidak dapat melakukan submit skor.<br>Silakan login sebagai player.</td></tr>`;
+            if (!state.currentUser) {
+                appDiv.innerHTML = renderLogin();
                 return;
             }
 
-            let html = '';
-            beatmaps.forEach(map => {
-                if (map.mod === 'MM') {
-                    for (let run = 1; run <= 3; run++) {
-                        html += `
-                            <tr class="hover:bg-slate-800/30">
-                                <td class="p-3 font-medium text-white flex items-center gap-2">
-                                    <span class="px-2 py-0.5 rounded text-xs border ${modBadgeColors[map.mod]}">${map.name}</span>
-                                    <span class="text-xs text-slate-400">(Run ${run})</span>
-                                </td>
-                                <td class="p-3 text-slate-400 text-xs">Run ${run}</td>
-                                <td class="p-3 flex gap-2">
-                                    <input type="text" placeholder="NM" value="${scores[`${currentUser}_${map.name}_${run}_NM`] || ''}" oninput="validateInput(this)" onchange="updateScore('${currentUser}', '${map.name}', ${run}, 'NM', this.value)" class="w-24 bg-slate-800 border border-slate-700 px-2 py-1 rounded text-center text-white text-xs">
-                                    <input type="text" placeholder="HD" value="${scores[`${currentUser}_${map.name}_${run}_HD`] || ''}" oninput="validateInput(this)" onchange="updateScore('${currentUser}', '${map.name}', ${run}, 'HD', this.value)" class="w-24 bg-slate-800 border border-slate-700 px-2 py-1 rounded text-center text-white text-xs">
-                                    <input type="text" placeholder="HR" value="${scores[`${currentUser}_${map.name}_${run}_HR`] || ''}" oninput="validateInput(this)" onchange="updateScore('${currentUser}', '${map.name}', ${run}, 'HR', this.value)" class="w-24 bg-slate-800 border border-slate-700 px-2 py-1 rounded text-center text-white text-xs">
-                                </td>
-                            </tr>
-                        `;
-                    }
-                } else {
-                    for (let run = 1; run <= 3; run++) {
-                        html += `
-                            <tr class="hover:bg-slate-800/30">
-                                <td class="p-3 font-medium text-white flex items-center gap-2"><span class="px-2 py-0.5 rounded text-xs border ${modBadgeColors[map.mod]}">${map.name}</span></td>
-                                <td class="p-3 text-slate-400 text-xs">Run ${run}</td>
-                                <td class="p-3">
-                                    <input type="text" placeholder="Skor..." value="${scores[`${currentUser}_${map.name}_${run}`] || ''}" oninput="validateInput(this)" onchange="updateScore('${currentUser}', '${map.name}', ${run}, null, this.value)" class="w-36 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded text-center text-white text-sm">
-                                </td>
-                            </tr>
-                        `;
-                    }
-                }
-            });
-            tbody.innerHTML = html;
-        }
-
-        function updateScore(player, mapName, run, submod, val) {
-            let key = submod ? `${player}_${mapName}_${run}_${submod}` : `${player}_${mapName}_${run}`;
-            if (val) scores[key] = val; else delete scores[key];
-        }
-
-        async function saveScores() {
-            await saveDataToDB();
-            renderLeaderboard();
-            alert("Skor berhasil disimpan!");
-        }
-
-        // Render Admin Panel
-        function renderAdmin() {
-            const playersTbody = document.getElementById('manage-players-tbody');
-            playersTbody.innerHTML = players.map(p => `
-                <tr class="border-b border-slate-800/60">
-                    <td class="p-3 text-white font-medium">${p}</td>
-                    <td class="p-3 text-right"><button onclick="removePlayer('${p}')" class="text-red-400 hover:text-red-300 text-xs bg-red-500/10 px-2.5 py-1 rounded">Hapus</button></td>
-                </tr>
-            `).join('');
-
-            const mapsTbody = document.getElementById('manage-maps-tbody');
-            mapsTbody.innerHTML = beatmaps.map((m, idx) => `
-                <tr class="border-b border-slate-800/60">
-                    <td class="p-3 text-white font-medium flex items-center gap-2">
-                        <span class="px-2 py-0.5 rounded text-xs border ${modBadgeColors[m.mod]}">${m.mod}</span> ${m.name}
-                    </td>
-                    <td class="p-3 text-right"><button onclick="removeBeatmap(${idx})" class="text-red-400 hover:text-red-300 text-xs bg-red-500/10 px-2.5 py-1 rounded">Hapus</button></td>
-                </tr>
-            `).join('');
-        }
-
-        async function addPlayer() {
-            const input = document.getElementById('new-player-input');
-            const name = input.value.trim();
-            if (name && !players.includes(name)) {
-                players.push(name);
-                input.value = '';
-                await saveDataToDB();
-                renderAdmin();
-                renderLeaderboard();
+            let viewContent = '';
+            switch (state.view) {
+                case 'leaderboard': viewContent = renderLeaderboard(); break;
+                case 'submit': viewContent = renderSubmitScore(); break;
+                case 'admin':
+                    if (state.currentUser.role === 'admin') viewContent = renderAdmin();
+                    else { state.view = 'leaderboard'; viewContent = renderLeaderboard(); }
+                    break;
+                default: viewContent = renderLeaderboard();
             }
+
+            appDiv.innerHTML = `
+                ${renderNavbar()}
+                <main class="flex-grow pb-10">${viewContent}</main>
+            `;
         }
 
-        async function removePlayer(name) {
-            players = players.filter(p => p !== name);
-            await saveDataToDB();
-            renderAdmin();
-            renderLeaderboard();
-        }
-
-        async function addBeatmap() {
-            const nameInput = document.getElementById('new-map-name');
-            const modSelect = document.getElementById('new-map-mod');
-            const name = nameInput.value.trim();
-            const mod = modSelect.value;
-            if (name && !beatmaps.some(b => b.name === name)) {
-                beatmaps.push({ name, mod });
-                nameInput.value = '';
-                await saveDataToDB();
-                renderAdmin();
-                renderLeaderboard();
-                if(currentUser !== 'admin') renderSubmitForm();
+        // --- INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Seed Mock Data jika offline
+            if (!API_URL) {
+                state.players = [
+                    { id: 'admin1', username: 'admin', password: 'admin', role: 'admin' },
+                    { id: 'p1', username: 'faker', password: '123', role: 'player' }
+                ];
+                const initialMaps = [
+                    { id: 'nm1', mod: 'NM', name: 'NM1' }, { id: 'nm2', mod: 'NM', name: 'NM2' }, { id: 'nm3', mod: 'NM', name: 'NM3' }, { id: 'nm4', mod: 'NM', name: 'NM4' },
+                    { id: 'hd1', mod: 'HD', name: 'HD1' }, { id: 'hd2', mod: 'HD', name: 'HD2' }, { id: 'hd3', mod: 'HD', name: 'HD3' },
+                    { id: 'hr1', mod: 'HR', name: 'HR1' }, { id: 'hr2', mod: 'HR', name: 'HR2' }, { id: 'hr3', mod: 'HR', name: 'HR3' },
+                    { id: 'dt1', mod: 'DT', name: 'DT1' }, { id: 'dt2', mod: 'DT', name: 'DT2' }, { id: 'dt3', mod: 'DT', name: 'DT3' },
+                    { id: 'mm1', mod: 'MM', name: 'MM1' }, { id: 'mm2', mod: 'MM', name: 'MM2' }, { id: 'tb1', mod: 'TB', name: 'TB1' }
+                ];
+                state.beatmaps = initialMaps;
+            } else {
+                fetchDatabase(); // Mulai fetching
             }
-        }
-
-        async function removeBeatmap(index) {
-            beatmaps.splice(index, 1);
-            await saveDataToDB();
-            renderAdmin();
-            renderLeaderboard();
-            if(currentUser !== 'admin') renderSubmitForm();
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            loadDataFromDB();
+            renderApp();
         });
     </script>
 </body>
