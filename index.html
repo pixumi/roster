@@ -85,8 +85,8 @@
         const state = {
             currentUser: null,
             view: 'login', // 'login', 'leaderboard', 'submit', 'admin'
-            currentStage: 'Qualifier', // State untuk tracking dropdown Stage (Leaderboard & Submit)
-            adminStage: 'Qualifier', // State untuk tracking dropdown Stage di Admin Panel
+            currentStage: 'Qualifier', // State untuk dropdown Stage (Leaderboard & Submit)
+            adminStage: 'Qualifier', // State untuk dropdown Stage di Admin Panel
             players: [],
             beatmaps: [],
             scores: [] 
@@ -173,7 +173,6 @@
             renderApp();
         }
 
-        // Simpan ke API
         window.addPlayer = async function(username, password) {
             if (state.players.some(p => p.username === username)) {
                 showToast('Username sudah digunakan!', 'error'); return;
@@ -257,10 +256,9 @@
                 const score = Number(value);
                 if (isNaN(score) || score <= 0) continue;
 
-                const parts = key.split('_');
-                const mapId = parts[1];
-                const subMod = parts[2] || null;
-                const mapKey = subMod ? `${mapId}_${subMod}` : mapId;
+                // key yang terlempar formatnya: score_mapId_run atau score_mapId_run_subMod
+                // Kita potong kata "score_" di depannya
+                const mapKey = key.replace('score_', ''); 
 
                 if(API_URL) {
                     promises.push(fetch(`${API_URL}/scores`, { 
@@ -285,7 +283,7 @@
                     await fetchDatabase();
                 }
                 showToast(`Tersimpan: ${added} input skor Run ditambahkan.`, 'success');
-                form.reset();
+                // renderApp akan dipanggil kembali oleh fetchDatabase sehingga value tersimpan otomatis tampil
                 window.navigate('leaderboard');
             } else {
                 showToast('Tidak ada skor valid yang diinput.', 'warning');
@@ -300,24 +298,35 @@
             currentStageMaps.forEach(map => {
                 const subMods = map.mod === 'MM' ? ['NM', 'HD', 'HR'] : [null];
                 subMods.forEach(subMod => {
-                    const mapKey = subMod ? `${map.id}_${subMod}` : map.id;
-                    mapStats[mapKey] = [];
+                    const mapBaseKey = subMod ? `${map.id}_${subMod}` : map.id;
+                    mapStats[mapBaseKey] = [];
                     
                     playerList.forEach(player => {
-                        const playerRuns = state.scores.filter(s => s.player_id === player.id && s.map_key === mapKey);
+                        let sum = 0;
+                        let count = 0;
+                        
+                        // Menarik data skor dari Run 1, 2, dan 3
+                        for(let r=1; r<=3; r++) {
+                            const exactKey = subMod ? `${map.id}_${r}_${subMod}` : `${map.id}_${r}`;
+                            const playerRuns = state.scores.filter(s => s.player_id === player.id && s.map_key === exactKey);
+                            if (playerRuns.length > 0) {
+                                // Ambil skor submission yang terbaru (jika disubmit berkali-kali)
+                                sum += playerRuns[playerRuns.length - 1].score; 
+                                count++;
+                            }
+                        }
                         
                         let avg = null;
-                        if (playerRuns.length > 0) {
-                            const sumScores = playerRuns.reduce((a, b) => a + b.score, 0);
-                            avg = Math.round(sumScores / playerRuns.length);
+                        if (count > 0) {
+                            avg = Math.round(sum / count);
                         }
 
                         if (avg !== null) {
-                            mapStats[mapKey].push({ playerId: player.id, average: avg });
+                            mapStats[mapBaseKey].push({ playerId: player.id, average: avg });
                         }
                     });
                     
-                    mapStats[mapKey].sort((a, b) => b.average - a.average);
+                    mapStats[mapBaseKey].sort((a, b) => b.average - a.average);
                 });
             });
 
@@ -546,6 +555,13 @@
             const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
             let tableRows = '';
 
+            // Helper untuk memanggil data yang tersimpan agar tampil kembali di form
+            function getScoreValue(mapId, run, subMod = null) {
+                const exactKey = subMod ? `${mapId}_${run}_${subMod}` : `${mapId}_${run}`;
+                const runs = state.scores.filter(s => s.player_id === state.currentUser.id && s.map_key === exactKey);
+                return runs.length > 0 ? runs[runs.length - 1].score : '';
+            }
+
             modOrder.forEach(mod => {
                 const maps = currentStageMaps.filter(b => b.mod === mod);
                 if (maps.length === 0) return;
@@ -560,7 +576,7 @@
 
                 tableRows += `
                     <tr class="bg-slate-900 border-b border-slate-700">
-                        <td colspan="2" class="px-6 py-3 font-bold ${modColor} text-lg">
+                        <td colspan="4" class="px-6 py-3 font-bold ${modColor} text-lg">
                             <i class="fa-solid fa-layer-group mr-2"></i> ${mod} Pool
                         </td>
                     </tr>
@@ -568,38 +584,52 @@
 
                 maps.forEach(map => {
                     if (mod === 'MM') {
-                        tableRows += `
-                            <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition flex flex-col sm:table-row">
-                                <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-200 sm:w-1/4 sm:border-r sm:border-slate-700/50">${map.name}</td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-wrap gap-4 w-fit">
-                                        <div class="flex flex-col items-center">
-                                            <label class="block text-xs font-bold text-emerald-400 mb-1">NM Score</label>
-                                            <input type="text" name="score_${map.id}_NM" oninput="window.validateScore(this)" class="w-24 bg-slate-900 border border-slate-600 text-white rounded px-2 py-2 focus:outline-none focus:border-brand-500 font-mono text-sm text-center" placeholder="0">
+                        let runCols = '';
+                        for(let r=1; r<=3; r++){
+                            runCols += `
+                                <td class="px-2 py-3 border-r border-slate-700/50 align-top">
+                                    <div class="flex flex-col gap-2 items-center w-full max-w-[90px] mx-auto">
+                                        <div class="flex items-center justify-between w-full">
+                                            <span class="text-[10px] font-bold text-emerald-400">NM</span>
+                                            <input type="text" name="score_${map.id}_${r}_NM" value="${getScoreValue(map.id, r, 'NM')}" oninput="window.validateScore(this)" class="w-16 bg-slate-900 border border-slate-600 text-white rounded px-1 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs text-center" placeholder="0">
                                         </div>
-                                        <div class="flex flex-col items-center">
-                                            <label class="block text-xs font-bold text-amber-500 mb-1">HD Score</label>
-                                            <input type="text" name="score_${map.id}_HD" oninput="window.validateScore(this)" class="w-24 bg-slate-900 border border-slate-600 text-white rounded px-2 py-2 focus:outline-none focus:border-brand-500 font-mono text-sm text-center" placeholder="0">
+                                        <div class="flex items-center justify-between w-full">
+                                            <span class="text-[10px] font-bold text-amber-500">HD</span>
+                                            <input type="text" name="score_${map.id}_${r}_HD" value="${getScoreValue(map.id, r, 'HD')}" oninput="window.validateScore(this)" class="w-16 bg-slate-900 border border-slate-600 text-white rounded px-1 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs text-center" placeholder="0">
                                         </div>
-                                        <div class="flex flex-col items-center">
-                                            <label class="block text-xs font-bold text-red-500 mb-1">HR Score</label>
-                                            <input type="text" name="score_${map.id}_HR" oninput="window.validateScore(this)" class="w-24 bg-slate-900 border border-slate-600 text-white rounded px-2 py-2 focus:outline-none focus:border-brand-500 font-mono text-sm text-center" placeholder="0">
+                                        <div class="flex items-center justify-between w-full">
+                                            <span class="text-[10px] font-bold text-red-500">HR</span>
+                                            <input type="text" name="score_${map.id}_${r}_HR" value="${getScoreValue(map.id, r, 'HR')}" oninput="window.validateScore(this)" class="w-16 bg-slate-900 border border-slate-600 text-white rounded px-1 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs text-center" placeholder="0">
                                         </div>
                                     </div>
-                                    <p class="text-xs text-slate-500 mt-2">* Isi salah satu mod yang dimainkan pada run ini.</p>
                                 </td>
+                            `;
+                        }
+                        tableRows += `
+                            <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition">
+                                <td class="px-6 py-4 font-medium text-slate-200 border-r border-slate-700/50 w-1/4">
+                                    ${map.name}
+                                    <div class="text-[10px] text-slate-500 mt-1 font-normal leading-tight">Pilih salah satu mod per run</div>
+                                </td>
+                                ${runCols}
                             </tr>
                         `;
                     } else {
-                        tableRows += `
-                            <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition flex flex-col sm:table-row">
-                                <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-200 sm:w-1/4 sm:border-r sm:border-slate-700/50">${map.name}</td>
-                                <td class="px-6 py-2 sm:py-4">
-                                    <div class="relative w-32">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 font-bold">#</div>
-                                        <input type="text" name="score_${map.id}" oninput="window.validateScore(this)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-8 pr-2 py-2 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-mono text-sm text-left" placeholder="0">
+                        let runCols = '';
+                        for(let r=1; r<=3; r++){
+                            runCols += `
+                                <td class="px-3 py-4 border-r border-slate-700/50">
+                                    <div class="relative w-full max-w-[120px] mx-auto">
+                                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-500 font-bold text-xs">#</div>
+                                        <input type="text" name="score_${map.id}_${r}" value="${getScoreValue(map.id, r)}" oninput="window.validateScore(this)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-6 pr-2 py-2 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-mono text-sm text-left" placeholder="0">
                                     </div>
                                 </td>
+                            `;
+                        }
+                        tableRows += `
+                            <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition">
+                                <td class="px-6 py-4 font-medium text-slate-200 border-r border-slate-700/50 w-1/4">${map.name}</td>
+                                ${runCols}
                             </tr>
                         `;
                     }
@@ -607,11 +637,11 @@
             });
 
             if (tableRows === '') {
-                tableRows = `<tr><td colspan="2" class="px-6 py-8 text-center text-slate-500">Belum ada map terdaftar di stage ini.</td></tr>`;
+                tableRows = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">Belum ada map terdaftar di stage ini.</td></tr>`;
             }
 
             return `
-                <div class="fade-in max-w-4xl mx-auto w-full">
+                <div class="fade-in max-w-5xl mx-auto w-full">
                     <div class="flex flex-col mb-6">
                         <select onchange="window.changeStage(this.value)" class="bg-transparent text-3xl font-bold text-white mb-1 appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit">
                             <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>Form Submission: QUALIFIER ▾</option>
@@ -621,16 +651,18 @@
                             <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>Form Submission: FINAL ▾</option>
                             <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>Form Submission: GRAND FINAL ▾</option>
                         </select>
-                        <p class="text-slate-400 text-sm">Isi skor pada map yang dimainkan. Submit beberapa kali pada map yang sama akan dihitung <b>rata-ratanya</b>.</p>
+                        <p class="text-slate-400 text-sm">Isi skor pada map yang dimainkan. Run 1, 2, dan 3 akan dihitung <b>rata-ratanya</b>.</p>
                     </div>
                     
                     <form onsubmit="window.saveScores(event, this)" class="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden">
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-slate-900 hidden sm:table-header-group">
+                            <table class="w-full text-left border-collapse min-w-[600px]">
+                                <thead class="bg-slate-900">
                                     <tr>
                                         <th class="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-1/4 border-r border-slate-700">Map ID</th>
-                                        <th class="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Input Skor</th>
+                                        <th class="px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/4">RUN 1</th>
+                                        <th class="px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/4">RUN 2</th>
+                                        <th class="px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center w-1/4">RUN 3</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -640,7 +672,7 @@
                         </div>
                         <div class="p-6 bg-slate-900 border-t border-slate-700 flex justify-end">
                             <button type="submit" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 transition duration-200 flex items-center justify-center">
-                                <i class="fa-solid fa-paper-plane mr-2"></i> Submit Run
+                                <i class="fa-solid fa-paper-plane mr-2"></i> Save Scores
                             </button>
                         </div>
                     </form>
@@ -663,6 +695,7 @@
             if (players.length === 0) playerRows = `<tr><td colspan="2" class="px-4 py-6 text-center text-slate-500">Tidak ada player terdaftar.</td></tr>`;
 
             const currentAdminStage = state.adminStage || 'Qualifier';
+            // PERBAIKAN FATAL: Memfilter beatmap berdasarkan stage aktif di dropdown
             const filteredBeatmaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === currentAdminStage);
 
             let beatmapRows = filteredBeatmaps.map(b => {
@@ -706,7 +739,7 @@
                                 <form onsubmit="event.preventDefault(); window.addPlayer(this.username.value, this.password.value); this.reset();" class="flex gap-3">
                                     <input type="text" name="username" required placeholder="Username Player" class="flex-1 bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500">
                                     <input type="password" name="password" required placeholder="Password" class="flex-1 bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500">
-                                    <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg transition font-medium whitespace-nowrap">
+                                    <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0">
                                         <i class="fa-solid fa-plus mr-1"></i> Add
                                     </button>
                                 </form>
@@ -726,7 +759,7 @@
                             </div>
                             <div class="p-4 border-b border-slate-700">
                                 <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value, this.mapName.value); this.reset();" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-32">
+                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-28 flex-shrink-0">
                                         <option value="Qualifier" ${currentAdminStage === 'Qualifier' ? 'selected' : ''}>Qualifier</option>
                                         <option value="RO32" ${currentAdminStage === 'RO32' ? 'selected' : ''}>RO32</option>
                                         <option value="RO16" ${currentAdminStage === 'RO16' ? 'selected' : ''}>RO16</option>
@@ -734,7 +767,7 @@
                                         <option value="Final" ${currentAdminStage === 'Final' ? 'selected' : ''}>Final</option>
                                         <option value="Grand Final" ${currentAdminStage === 'Grand Final' ? 'selected' : ''}>Grand Final</option>
                                     </select>
-                                    <select name="mapMod" required class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-24">
+                                    <select name="mapMod" required class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-20 flex-shrink-0">
                                         <option value="NM">NM</option>
                                         <option value="HD">HD</option>
                                         <option value="HR">HR</option>
@@ -742,8 +775,8 @@
                                         <option value="MM">MM</option>
                                         <option value="TB">TB</option>
                                     </select>
-                                    <input type="text" name="mapName" required placeholder="Nama Map (ex: NM5)" class="flex-1 bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500">
-                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg transition font-medium whitespace-nowrap">
+                                    <input type="text" name="mapName" required placeholder="Nama Map (ex: NM5)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500">
+                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0">
                                         <i class="fa-solid fa-plus mr-1"></i> Add
                                     </button>
                                 </form>
@@ -789,7 +822,7 @@
             if (!API_URL) {
                 state.players = [
                     { id: 'admin1', username: 'admin', password: 'admin', role: 'admin' },
-
+                    { id: 'p1', username: 'faker', password: '123', role: 'player' }
                 ];
                 const initialMaps = [
                     { id: 'nm1', stage: 'Qualifier', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier', mod: 'NM', name: 'NM4' },
