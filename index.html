@@ -64,7 +64,7 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Style untuk container yang akan di-export agar backgroundnya konsisten */
+        /* Style untuk container export */
         #export-container {
             background-color: #0f172a;
             padding: 20px;
@@ -125,7 +125,7 @@
             players: [],
             beatmaps: [],
             scores: [],
-            exportBlob: null // Untuk menyimpan data gambar hasil export
+            exportBlob: null 
         };
 
         let isOnline = false;
@@ -173,14 +173,20 @@
             const container = document.getElementById('export-container');
             if (!container) return showToast('Area export tidak ditemukan.', 'error');
             
+            // Sembunyikan dropdown, tampilkan teks judul statis agar tercetak bagus
+            const exportDropdown = document.getElementById('export-dropdown-wrapper');
+            const exportStaticTitle = document.getElementById('export-static-title');
+            
+            if(exportDropdown) exportDropdown.classList.add('hidden');
+            if(exportStaticTitle) exportStaticTitle.classList.remove('hidden');
+
             document.getElementById('export-modal').classList.remove('hidden');
             document.getElementById('loading-indicator').classList.remove('hidden');
             
             try {
-                // Menghilangkan sementara efek hover/interaksi agar render murni
                 const canvas = await html2canvas(container, {
                     backgroundColor: '#0f172a',
-                    scale: 2, // High resolution
+                    scale: 2, 
                     logging: false,
                     useCORS: true
                 });
@@ -190,11 +196,20 @@
                     const url = URL.createObjectURL(blob);
                     document.getElementById('export-preview').src = url;
                     document.getElementById('loading-indicator').classList.add('hidden');
+                    
+                    // Kembalikan ke UI normal (tampilkan dropdown, sembunyikan teks statis)
+                    if(exportDropdown) exportDropdown.classList.remove('hidden');
+                    if(exportStaticTitle) exportStaticTitle.classList.add('hidden');
                 }, 'image/png');
                 
             } catch (error) {
                 console.error("Gagal membuat gambar:", error);
                 document.getElementById('loading-indicator').classList.add('hidden');
+                
+                // Kembalikan ke UI normal meskipun gagal
+                if(exportDropdown) exportDropdown.classList.remove('hidden');
+                if(exportStaticTitle) exportStaticTitle.classList.add('hidden');
+                
                 showToast('Gagal memproses gambar roster.', 'error');
             }
         }
@@ -570,6 +585,14 @@
 
             let viewHTML = '';
 
+            let stageTitle = '';
+            if (state.currentStage === 'Qualifier') stageTitle = 'QUALIFIER - PLAYER SCORES';
+            else if (state.currentStage === 'RO32') stageTitle = 'RO32 - ROSTER';
+            else if (state.currentStage === 'RO16') stageTitle = 'RO16 - ROSTER';
+            else if (state.currentStage === 'Semi Final') stageTitle = 'SEMI FINAL - ROSTER';
+            else if (state.currentStage === 'Final') stageTitle = 'FINAL - ROSTER';
+            else if (state.currentStage === 'Grand Final') stageTitle = 'GRAND FINAL - ROSTER';
+
             if (isQualifier) {
                 let mapHeaders = '';
                 currentStageMaps.forEach(map => {
@@ -600,7 +623,7 @@
                             const avg = player.mapAverages[mapKey];
                             const rank = player.mapRanks[mapKey];
                             
-                            let cellClass = "px-3 py-2 whitespace-nowrap font-mono text-sm border-l border-slate-700/50 hover:bg-slate-700/80 transition ";
+                            let cellClass = "px-3 py-2 whitespace-nowrap font-sans font-bold text-sm border-l border-slate-700/50 hover:bg-slate-700/80 transition ";
                             
                             if (avg !== null) {
                                 let rankColor = 'text-slate-500'; let scoreColor = 'text-slate-300';
@@ -635,22 +658,25 @@
                 if (data.rankings.length === 0) rows = `<tr><td colspan="100%" class="px-6 py-8 text-center text-slate-500">Belum ada data pemain.</td></tr>`;
 
                 viewHTML = `
-                    <div id="export-container" class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
-                        <div class="overflow-x-auto custom-scrollbar pb-2">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-slate-900">
-                                    <tr>
-                                        <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center sticky left-0 bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">#</th>
-                                        <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider sticky left-[48px] bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] min-w-[150px]">Player</th>
-                                        <th class="px-4 py-4 text-xs font-bold text-white bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap">Avg. <i class="fa-solid fa-sort-down align-top ml-1 text-brand-400"></i></th>
-                                        <th class="px-4 py-4 text-xs font-bold text-slate-300 bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap border-r border-slate-700">Avg. Score</th>
-                                        ${mapHeaders}
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-700">
-                                    ${rows}
-                                </tbody>
-                            </table>
+                    <div id="export-container" class="w-full bg-[#0f172a] rounded-xl relative pt-4 pb-2 px-2">
+                        <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
+                        <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
+                            <div class="overflow-x-auto custom-scrollbar pb-2">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="bg-slate-900">
+                                        <tr>
+                                            <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center sticky left-0 bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">#</th>
+                                            <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider sticky left-[48px] bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] min-w-[150px]">Player</th>
+                                            <th class="px-4 py-4 text-xs font-bold text-white bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap">Avg. <i class="fa-solid fa-sort-down align-top ml-1 text-brand-400"></i></th>
+                                            <th class="px-4 py-4 text-xs font-bold text-slate-300 bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap border-r border-slate-700">Avg. Score</th>
+                                            ${mapHeaders}
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-700">
+                                        ${rows}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -677,7 +703,6 @@
                         if(map.mod === 'DT') bgColor = 'bg-[#9bc2e6]'; 
                         if(map.mod === 'TB') bgColor = 'bg-slate-300';
 
-                        // Map name di-Bold
                         theadRows += `<th colspan="2" class="${bgColor} text-black font-bold text-center border-b border-r border-black px-2 py-1 text-sm tracking-widest">${map.name}</th>`;
                         tcol1Rows += `<th class="${bgColor} text-black font-bold text-center border-r border-black border-b px-2 py-0.5 text-xs w-[120px]">Player</th>`;
                         tcol1Rows += `<th class="${bgColor} text-black font-bold text-center border-r border-black border-b px-2 py-0.5 text-xs w-[80px]">Score</th>`;
@@ -706,7 +731,6 @@
                         if(map.mod === 'DT') subBg = 'bg-[#ddebf7]';
                         if(map.mod === 'TB') subBg = 'bg-[#e7e6e6]';
 
-                        // Backup row (tidak bold)
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
                             bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black px-2 py-1 text-sm truncate max-w-[120px] font-normal">${pObj ? pObj.username : '-'}</td>`;
@@ -734,7 +758,6 @@
                     `;
                 }
 
-                // Tabel MM dan TB
                 const generateMMAndTBGrid = () => {
                     const mmMaps = currentStageMaps.filter(b => b.mod === 'MM');
                     const tbMaps = currentStageMaps.filter(b => b.mod === 'TB');
@@ -743,8 +766,9 @@
 
                     let theadRows = '<tr>';
                     let tcol1Rows = '<tr class="border-b border-black">';
-                    let bodyRows = ['', '', '', '']; // Kita sediakan 4 baris. Baris 4 untuk total (dan row backup TB)
-                    
+                    let bodyRows = ['', '', '']; 
+                    let footRow = '<tr class="border-t border-black text-[13px] text-black">';
+
                     const bgColor = 'bg-[#c2c2f0]'; 
                     const hrColor = 'bg-[#ea9999]';
                     const hdColor = 'bg-[#ffd966]';
@@ -799,9 +823,9 @@
                             }
                         }
 
-                        // Baris 4 (Total MM dinaikkan ke sini)
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black font-bold text-center border-r border-b border-black px-2 py-1 font-sans text-[13px]">${totalMapMain.toLocaleString('en-US')}</td>`;
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black text-center border-r border-b border-black px-2 py-1 font-sans text-[13px] font-normal">${totalMapBackup.toLocaleString('en-US')}</td>`;
+                        // MM Total dinaikkan ke footrow 
+                        footRow += `<td colspan="2" class="${bgColor} text-black font-bold text-center border-r border-black px-2 py-1 font-sans text-[13px]">${totalMapMain.toLocaleString('en-US')}</td>`;
+                        footRow += `<td colspan="2" class="${bgColor} text-black text-center border-r border-black px-2 py-1 font-sans text-[13px] font-normal">${totalMapBackup.toLocaleString('en-US')}</td>`;
                     });
 
                     // TB Map rendering
@@ -827,7 +851,15 @@
                             }
                         }
 
-                        // Baris 4: TB Backup
+                        // Untuk TB, Baris 4 adalah baris Backup, bukan footrow
+                        if(!bodyRows[3]) bodyRows[3] = '';
+                        
+                        // Isi ruang kosong untuk MM di baris 4 agar TB Backup tidak ke kiri
+                        const totalMMCols = mmMaps.length * 4;
+                        if(totalMMCols > 0) {
+                            bodyRows[3] += `<td colspan="${totalMMCols}" class="bg-[#c2c2f0] border-r border-b border-black"></td>`;
+                        }
+
                         let subBg = 'bg-[#e7e6e6]';
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
@@ -837,22 +869,13 @@
                             bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black px-2 py-1 font-normal">-</td><td class="${subBg} text-black border-r border-b border-black px-2 py-1 text-right font-sans font-normal">-</td>`;
                         }
 
-                        // Buat Baris 5 (Tebakan) hanya untuk nampilin Total TB di baris bawah. 
-                        // Tapi karena tabel kita cuma sedia bodyRows, kita hack ke baris ke 4 ini jika mau sejajar.
-                        // Namun karena TB backup butuh 1 baris, total TB turun ke baris ke 5.
-                        if(!bodyRows[4]) bodyRows[4] = '';
-                        
-                        // Isi ruang kosong untuk MM di baris 5
-                        const totalMMCols = mmMaps.length * 4;
-                        if(totalMMCols > 0) {
-                            bodyRows[4] += `<td colspan="${totalMMCols}" class="bg-[#c2c2f0] border-r border-b border-black"></td>`;
-                        }
-                        
-                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black font-bold text-center border-r border-b border-black px-2 py-1 font-sans text-[13px]">${totalTB.toLocaleString('en-US')}</td>`;
+                        // Total TB diletakkan di footrow (sejajar dengan total MM)
+                        footRow += `<td colspan="2" class="${tbBg} text-black font-bold text-center border-r border-black px-2 py-1 font-sans text-[13px]">${totalTB.toLocaleString('en-US')}</td>`;
                     });
 
                     theadRows += '</tr>';
                     tcol1Rows += '</tr>';
+                    footRow += '</tr>';
                     
                     let combinedBody = bodyRows.filter(r => r !== '').map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
 
@@ -861,6 +884,7 @@
                             <table class="border-collapse border-[4px] border-black min-w-max bg-white shadow-2xl mx-auto">
                                 <thead>${theadRows}${tcol1Rows}</thead>
                                 <tbody>${combinedBody}</tbody>
+                                <tfoot>${footRow}</tfoot>
                             </table>
                         </div>
                     `;
@@ -877,7 +901,8 @@
                 }
                 
                 viewHTML = `
-                    <div id="export-container" class="w-full">
+                    <div id="export-container" class="w-full bg-[#0f172a] rounded-xl relative pt-4 pb-2 px-2">
+                        <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
                         ${rosterHTML}
                     </div>
                 `;
@@ -886,9 +911,9 @@
             return `
                 <div class="fade-in w-full">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-5 w-full">
-                        <div class="flex-1"></div> <!-- Spacer Kiri -->
+                        <div class="flex-1"></div>
                         
-                        <div class="flex flex-col items-center text-center flex-1">
+                        <div id="export-dropdown-wrapper" class="flex flex-col items-center text-center flex-1">
                             <select onchange="window.changeStage(this.value)" class="bg-transparent text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last">
                                 <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>QUALIFIER - PLAYER SCORES ▾</option>
                                 <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>RO32 - ROSTER ▾</option>
