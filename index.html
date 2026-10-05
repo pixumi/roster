@@ -70,25 +70,6 @@
             padding: 20px;
             border-radius: 8px;
         }
-        
-        /* Hack html2canvas perataan tengah vertikal */
-        .cell-center {
-            display: flex;
-            align-items: center;
-            height: 100%;
-        }
-        .cell-center-right {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            height: 100%;
-        }
-        .cell-center-center {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-        }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col">
@@ -539,23 +520,25 @@
 
             return `
                 <nav class="bg-slate-800 border-b border-slate-700 py-4 mb-8 rounded-b-xl shadow-lg relative">
-                    <div class="flex flex-col lg:flex-row justify-between items-center px-4 sm:px-6 h-full relative">
-                        <div class="text-xl font-bold tracking-wider text-brand-500 mb-4 lg:mb-0 flex items-center shrink-0 w-full lg:w-1/3 justify-center lg:justify-start">
+                    <div class="flex flex-col lg:flex-row justify-between items-center px-4 sm:px-6 relative gap-4 lg:gap-0">
+                        <div class="text-xl font-bold tracking-wider text-brand-500 flex items-center shrink-0 w-full lg:w-1/3 justify-center lg:justify-start">
                             <i class="fa-solid fa-gamepad mr-2"></i>ROSTER GENERATOR
                             ${API_URL === '' ? '<span class="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-triangle-exclamation"></i> Offline Mode</span>' : 
                             (isOnline ? '<span class="text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-cloud"></i> Online</span>' : '<span class="text-[10px] bg-red-500/20 text-red-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-cloud-arrow-down"></i> Error</span>')}
                         </div>
                         
-                        <div class="flex justify-center items-center gap-4 sm:gap-6 mb-4 lg:mb-0 w-full lg:w-1/3 lg:absolute lg:left-1/2 lg:-translate-x-1/2 overflow-x-auto text-sm sm:text-base px-2">
+                        <div class="flex justify-center items-center gap-4 sm:gap-6 w-full lg:w-1/3 lg:absolute lg:left-1/2 lg:-translate-x-1/2 overflow-x-auto text-sm sm:text-base">
                             ${navLinks}
                         </div>
 
-                        <div class="flex items-center justify-center lg:justify-end bg-slate-700 px-4 py-2 rounded-full w-fit lg:w-1/3 text-sm sm:text-base shrink-0">
-                            <i class="fa-solid fa-user-circle text-lg sm:text-xl text-slate-300 mr-2"></i>
-                            <span class="mr-4 font-medium">${state.currentUser.username} <span class="text-xs text-brand-400 hidden sm:inline">(${state.currentUser.role})</span></span>
-                            <button onclick="window.logout()" class="text-red-400 hover:text-red-300 transition" title="Logout">
-                                <i class="fa-solid fa-sign-out-alt"></i>
-                            </button>
+                        <div class="flex items-center justify-center lg:justify-end w-full lg:w-1/3 shrink-0">
+                            <div class="flex items-center bg-slate-700 px-4 py-2 rounded-full text-sm sm:text-base w-fit">
+                                <i class="fa-solid fa-user-circle text-lg sm:text-xl text-slate-300 mr-2"></i>
+                                <span class="mr-4 font-medium">${state.currentUser.username} <span class="text-xs text-brand-400 hidden sm:inline">(${state.currentUser.role})</span></span>
+                                <button onclick="window.logout()" class="text-red-400 hover:text-red-300 transition" title="Logout">
+                                    <i class="fa-solid fa-sign-out-alt"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </nav>
@@ -641,7 +624,7 @@
                             const avg = player.mapAverages[mapKey];
                             const rank = player.mapRanks[mapKey];
                             
-                            let cellClass = "px-3 py-2 whitespace-nowrap font-sans font-bold text-sm border-l border-slate-700/50 hover:bg-slate-700/80 transition align-middle leading-none";
+                            let cellClass = "px-3 py-2 whitespace-nowrap font-sans font-bold text-sm border-l border-slate-700/50 hover:bg-slate-700/80 transition align-middle";
                             
                             if (avg !== null) {
                                 let rankColor = 'text-slate-500'; let scoreColor = 'text-slate-300';
@@ -651,23 +634,23 @@
                                 else if (rank === 3) { rankColor = 'text-amber-600 font-bold'; scoreColor = 'text-amber-500 font-bold'; }
                                 
                                 mapCells += `<td class="${cellClass}">
-                                    <div class="flex justify-between items-center w-full gap-2 leading-none">
+                                    <div class="flex justify-between items-center w-full gap-2">
                                         <span class="text-xs ${rankColor} w-6 text-left">#${rank}</span>
                                         <span class="${scoreColor} flex-1 text-right font-sans font-bold">${avg.toLocaleString('en-US')}</span>
                                     </div>
                                 </td>`;
                             } else {
-                                mapCells += `<td class="${cellClass} text-center text-slate-600 font-medium leading-none">-</td>`;
+                                mapCells += `<td class="${cellClass} text-center text-slate-600 font-medium">-</td>`;
                             }
                         });
                     });
 
                     return `
                         <tr class="bg-slate-800 border-b border-slate-700/50 hover:bg-slate-750 transition">
-                            <td class="px-4 py-2 whitespace-nowrap text-sm font-bold text-slate-300 w-12 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] align-middle leading-none">#${index + 1}</td>
-                            <td class="px-4 py-2 whitespace-nowrap font-bold text-white text-base sticky left-[48px] bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] align-middle leading-none">${player.username}</td>
-                            <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-white bg-slate-900/40 align-middle leading-none">${player.avgRank === 999 ? '-' : player.avgRank.toFixed(2)}</td>
-                            <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-slate-300 bg-slate-900/40 font-sans align-middle leading-none">${player.avgScore.toLocaleString('en-US')}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-sm font-bold text-slate-300 w-12 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] align-middle">#${index + 1}</td>
+                            <td class="px-4 py-2 whitespace-nowrap font-bold text-white text-base sticky left-[48px] bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] align-middle">${player.username}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-white bg-slate-900/40 align-middle">${player.avgRank === 999 ? '-' : player.avgRank.toFixed(2)}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-slate-300 bg-slate-900/40 font-sans align-middle">${player.avgScore.toLocaleString('en-US')}</td>
                             ${mapCells}
                         </tr>
                     `;
@@ -676,7 +659,7 @@
                 if (data.rankings.length === 0) rows = `<tr><td colspan="100%" class="px-6 py-8 text-center text-slate-500">Belum ada data pemain.</td></tr>`;
 
                 viewHTML = `
-                    <div class="w-full overflow-x-auto">
+                    <div class="w-full overflow-x-auto pb-4">
                         <div id="export-container" class="min-w-fit bg-[#0f172a] rounded-xl relative pt-4 pb-2 px-2 mx-auto">
                             <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
                             <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
@@ -684,10 +667,10 @@
                                     <table class="w-full text-left border-collapse">
                                         <thead class="bg-slate-900">
                                             <tr>
-                                                <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center sticky left-0 bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">#</th>
-                                                <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider sticky left-[48px] bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] min-w-[150px]">Player</th>
-                                                <th class="px-4 py-4 text-xs font-bold text-white bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap">Avg. <i class="fa-solid fa-sort-down align-top ml-1 text-brand-400"></i></th>
-                                                <th class="px-4 py-4 text-xs font-bold text-slate-300 bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap border-r border-slate-700">Avg. Score</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center sticky left-0 bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] align-middle">#</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider sticky left-[48px] bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] min-w-[150px] align-middle">Player</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-white bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap align-middle">Avg. <i class="fa-solid fa-sort-down align-top ml-1 text-brand-400"></i></th>
+                                                <th class="px-4 py-4 text-xs font-bold text-slate-300 bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap border-r border-slate-700 align-middle">Avg. Score</th>
                                                 ${mapHeaders}
                                             </tr>
                                         </thead>
@@ -724,11 +707,10 @@
                         if(map.mod === 'DT') bgColor = 'bg-[#9bc2e6]'; 
                         if(map.mod === 'TB') bgColor = 'bg-slate-300';
 
-                        // Menggunakan tinggi absolut h-[30px] dan div cell-center agar vertikal alignment mutlak
-                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold border-b border-r border-black p-0 tracking-widest leading-none h-[30px]"><div class="cell-center-center text-sm">${map.name}</div></th>`;
+                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold text-center align-middle border-b border-r border-black px-2 py-1.5 text-sm tracking-widest leading-none">${map.name}</th>`;
                         
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-black border-b p-0 w-[120px] leading-none h-[30px]"><div class="cell-center-center text-xs">Player</div></th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-black border-b p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-center text-xs">Score</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center align-middle border-r border-black border-b px-2 py-1.5 text-xs w-[120px] leading-none">Player</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center align-middle border-r border-black border-b px-2 py-1.5 text-xs w-[80px] leading-none">Score</th>`;
 
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
@@ -741,10 +723,10 @@
                             
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center px-2 font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</div></td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-1.5 font-bold text-sm truncate max-w-[120px] leading-none">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans font-bold text-sm leading-none">${p.average.toLocaleString('en-US')}</td>`;
                             } else {
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2">-</div></td><td class="${cellBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans">-</div></td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-1.5 leading-none">-</td><td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans leading-none">-</td>`;
                             }
                         }
 
@@ -756,13 +738,13 @@
 
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center px-2 text-sm font-normal truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</div></td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-1.5 text-sm truncate max-w-[120px] font-normal leading-none">${pObj ? pObj.username : '-'}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans text-sm font-normal leading-none">${backup.average.toLocaleString('en-US')}</td>`;
                         } else {
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2 font-normal">-</div></td><td class="${subBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-normal">-</div></td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-1.5 font-normal leading-none">-</td><td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans font-normal leading-none">-</td>`;
                         }
 
-                        footRow += `<td colspan="2" class="${bgColor} text-black border-r border-black p-0 leading-none h-[30px]"><div class="cell-center-center font-bold font-sans text-[13px]">${total.toLocaleString('en-US')}</div></td>`;
+                        footRow += `<td colspan="2" class="${bgColor} text-black align-middle font-bold text-center border-r border-black px-2 py-1.5 font-sans text-[13px] leading-none">${total.toLocaleString('en-US')}</td>`;
                     });
 
                     theadRows += '</tr>';
@@ -790,7 +772,7 @@
                     let theadRows = '<tr>';
                     let tcol1Rows = '<tr class="border-b border-black">';
                     let bodyRows = ['', '', '', '']; 
-                    let footRow = '<tr class="border-t border-black text-black">';
+                    let footRow = '<tr class="border-t border-black text-[13px] text-black">';
                     
                     const bgColor = 'bg-[#c2c2f0]'; 
                     const hrColor = 'bg-[#ea9999]';
@@ -801,12 +783,12 @@
                     const backupColorNM = 'bg-[#e2efda]';
 
                     mmMaps.forEach(map => {
-                        theadRows += `<th colspan="4" class="${bgColor} text-black font-bold border-b border-r border-black p-0 tracking-widest leading-none h-[30px]"><div class="cell-center-center text-sm">${map.name}</div></th>`;
+                        theadRows += `<th colspan="4" class="${bgColor} text-black align-middle font-bold text-center border-b border-r border-black px-2 py-1.5 text-sm tracking-widest leading-none">${map.name}</th>`;
                         
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center-center text-xs">Player</div></th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-center text-xs">Score</div></th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[100px] leading-none h-[30px]"><div class="cell-center-center text-xs">Backup</div></th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-center text-xs">Score</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[120px] leading-none">Player</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[80px] leading-none">Score</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[100px] leading-none">Backup</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[80px] leading-none">Score</th>`;
 
                         const statsHR = data.mapStats[`${map.id}_HR`] || [];
                         const statsHD = data.mapStats[`${map.id}_HD`] || [];
@@ -831,32 +813,32 @@
 
                             if (mainP) {
                                 const pObj = state.players.find(pl => pl.id === mainP.playerId);
-                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center px-2 font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
-                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-bold text-sm">${mainP.average.toLocaleString('en-US')}</div></td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border-r border-b border-black px-2 py-1.5 font-bold text-sm truncate max-w-[120px] leading-none">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans font-bold text-sm leading-none">${mainP.average.toLocaleString('en-US')}</td>`;
                             } else {
-                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2">-</div></td><td class="${mainColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans">-</div></td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border-r border-b border-black px-2 py-1.5 leading-none">-</td><td class="${mainColor} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans leading-none">-</td>`;
                             }
 
                             if (backupP) {
                                 const pObj = state.players.find(pl => pl.id === backupP.playerId);
-                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0 w-[100px] leading-none h-[30px]"><div class="cell-center px-2 text-sm font-normal truncate w-[100px]">${pObj ? pObj.username : '-'}</div></td>`;
-                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans text-sm font-normal">${backupP.average.toLocaleString('en-US')}</div></td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black align-middle border-r border-b border-black px-2 py-1.5 text-sm truncate max-w-[100px] font-normal leading-none">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans text-sm font-normal leading-none">${backupP.average.toLocaleString('en-US')}</td>`;
                             } else {
-                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2 font-normal">-</div></td><td class="${backColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-normal">-</div></td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black align-middle border-r border-b border-black px-2 py-1.5 font-normal leading-none">-</td><td class="${backColor} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans font-normal leading-none">-</td>`;
                             }
                         }
 
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-center font-bold font-sans text-[13px]">${totalMapMain.toLocaleString('en-US')}</div></td>`;
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-center font-normal font-sans text-[13px]">${totalMapBackup.toLocaleString('en-US')}</div></td>`;
+                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-2 font-sans text-[13px] leading-none">${totalMapMain.toLocaleString('en-US')}</td>`;
+                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black align-middle text-center border-r border-b border-black px-2 py-2 font-sans text-[13px] font-normal leading-none">${totalMapBackup.toLocaleString('en-US')}</td>`;
                     });
 
                     // TB MAPS
                     tbMaps.forEach(map => {
                         let tbBg = 'bg-[#e7e6e6]'; 
                         
-                        theadRows += `<th colspan="2" class="${tbBg} text-black font-bold border-b border-r border-black p-0 tracking-widest leading-none h-[30px]"><div class="cell-center-center text-sm">${map.name}</div></th>`;
-                        tcol1Rows += `<th class="${tbBg} text-black font-bold border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center-center text-xs">Player</div></th>`;
-                        tcol1Rows += `<th class="${tbBg} text-black font-bold border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-center text-xs">Score</div></th>`;
+                        theadRows += `<th colspan="2" class="${tbBg} text-black align-middle font-bold text-center border-b border-r border-black px-2 py-1.5 text-sm tracking-widest leading-none">${map.name}</th>`;
+                        tcol1Rows += `<th class="${tbBg} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[120px] leading-none">Player</th>`;
+                        tcol1Rows += `<th class="${tbBg} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[80px] leading-none">Score</th>`;
 
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
@@ -868,10 +850,10 @@
                             let cellBg = (i % 2 === 0) ? 'bg-[#f8f8f8]' : 'bg-white'; 
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center px-2 font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</div></td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-1.5 font-bold text-sm truncate max-w-[120px] leading-none">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans font-bold text-sm leading-none">${p.average.toLocaleString('en-US')}</td>`;
                             } else {
-                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2">-</div></td><td class="${cellBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans">-</div></td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-1.5 leading-none">-</td><td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans leading-none">-</td>`;
                             }
                         }
 
@@ -880,19 +862,19 @@
                         
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center px-2 text-sm font-normal truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</div></td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-1.5 text-sm truncate max-w-[120px] font-normal leading-none">${pObj ? pObj.username : '-'}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans text-sm font-normal leading-none">${backup.average.toLocaleString('en-US')}</td>`;
                         } else {
-                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2 font-normal">-</div></td><td class="${subBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-normal">-</div></td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-1.5 font-normal leading-none">-</td><td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-1.5 text-right font-sans font-normal leading-none">-</td>`;
                         }
 
                         if(!bodyRows[4]) bodyRows[4] = '';
                         const totalMMCols = mmMaps.length * 4;
                         if(totalMMCols > 0 && bodyRows[4] === '') {
-                            bodyRows[4] += `<td colspan="${totalMMCols}" class="bg-[#c2c2f0] border-r border-black border-t-0 text-transparent leading-none h-[30px] p-0"></td>`;
+                            bodyRows[4] += `<td colspan="${totalMMCols}" class="bg-[#c2c2f0] border-r border-black border-t-0 text-transparent leading-none p-0 m-0 border-b-0"></td>`;
                         }
                         
-                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black border-r border-black p-0 leading-none h-[30px]"><div class="cell-center-center font-bold font-sans text-[13px]">${totalTB.toLocaleString('en-US')}</div></td>`;
+                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-2 font-sans text-[13px] leading-none">${totalTB.toLocaleString('en-US')}</td>`;
                     });
 
                     theadRows += '</tr>';
@@ -1162,8 +1144,8 @@
                             </div>
                             <div class="p-4 border-b border-slate-700">
                                 <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value, this.mapName.value); this.reset();" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                                    <div class="flex gap-2">
-                                        <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-24 flex-shrink-0 text-sm">
+                                    <div class="flex gap-2 w-full sm:w-auto">
+                                        <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 flex-1 sm:flex-none sm:w-28 text-sm min-w-0">
                                             <option value="Qualifier" ${state.adminStage === 'Qualifier' ? 'selected' : ''}>Qualifier</option>
                                             <option value="RO32" ${state.adminStage === 'RO32' ? 'selected' : ''}>RO32</option>
                                             <option value="RO16" ${state.adminStage === 'RO16' ? 'selected' : ''}>RO16</option>
@@ -1171,7 +1153,7 @@
                                             <option value="Final" ${state.adminStage === 'Final' ? 'selected' : ''}>Final</option>
                                             <option value="Grand Final" ${state.adminStage === 'Grand Final' ? 'selected' : ''}>Grand Final</option>
                                         </select>
-                                        <select name="mapMod" required onchange="window.changeAdminMod(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-1 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-16 flex-shrink-0 text-center text-sm">
+                                        <select name="mapMod" required onchange="window.changeAdminMod(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-1 py-2 focus:outline-none focus:border-emerald-500 w-16 sm:w-16 flex-shrink-0 text-center text-sm">
                                             <option value="NM" ${state.adminMod === 'NM' ? 'selected' : ''}>NM</option>
                                             <option value="HD" ${state.adminMod === 'HD' ? 'selected' : ''}>HD</option>
                                             <option value="HR" ${state.adminMod === 'HR' ? 'selected' : ''}>HR</option>
@@ -1180,9 +1162,9 @@
                                             <option value="TB" ${state.adminMod === 'TB' ? 'selected' : ''}>TB</option>
                                         </select>
                                     </div>
-                                    <div class="flex gap-2 flex-1">
-                                        <input type="text" name="mapName" required placeholder="Nama Map (ex: NM5)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 text-sm">
-                                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0">
+                                    <div class="flex gap-2 flex-1 w-full">
+                                        <input type="text" name="mapName" required placeholder="Nama Map (ex: NM5)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 text-sm min-w-0">
+                                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0 text-sm">
                                             <i class="fa-solid fa-plus mr-1"></i> Add
                                         </button>
                                     </div>
