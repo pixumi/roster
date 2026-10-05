@@ -70,6 +70,25 @@
             padding: 20px;
             border-radius: 8px;
         }
+        
+        /* Hack html2canvas perataan tengah vertikal */
+        .cell-center {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        .cell-center-right {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            height: 100%;
+        }
+        .cell-center-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col">
@@ -78,7 +97,7 @@
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none"></div>
 
     <!-- Export Modal -->
-    <div id="export-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden fade-in">
+    <div id="export-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden fade-in px-4">
         <div class="bg-slate-800 p-6 rounded-xl shadow-2xl border border-slate-700 w-full max-w-4xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-white"><i class="fa-solid fa-camera mr-2"></i>Export Roster Preview</h3>
@@ -90,11 +109,11 @@
                 </div>
                 <img id="export-preview" src="" alt="Preview" class="max-w-full max-h-full object-contain shadow-2xl">
             </div>
-            <div class="flex justify-end gap-4 mt-6">
-                <button onclick="copyPNG()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg transition shadow-lg flex items-center">
+            <div class="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 mt-6">
+                <button onclick="copyPNG()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg transition shadow-lg flex items-center justify-center w-full sm:w-auto">
                     <i class="fa-solid fa-copy mr-2"></i> Copy Image
                 </button>
-                <button onclick="downloadPNG()" class="bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 px-6 rounded-lg transition shadow-lg flex items-center">
+                <button onclick="downloadPNG()" class="bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 px-6 rounded-lg transition shadow-lg flex items-center justify-center w-full sm:w-auto">
                     <i class="fa-solid fa-download mr-2"></i> Download PNG
                 </button>
             </div>
@@ -102,7 +121,7 @@
     </div>
 
     <!-- Main App Container -->
-    <div id="app" class="flex-grow flex flex-col w-full max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8">
+    <div id="app" class="flex-grow flex flex-col w-full max-w-[95%] mx-auto px-2 sm:px-4 lg:px-8">
         <!-- Content will be injected here by JavaScript -->
     </div>
 
@@ -503,35 +522,37 @@
         function renderNavbar() {
             if (!state.currentUser) return '';
             const navLinks = `
-                <button onclick="window.navigate('leaderboard')" class="${state.view === 'leaderboard' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition mx-2 py-2">
+                <button onclick="window.navigate('leaderboard')" class="${state.view === 'leaderboard' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition py-2 whitespace-nowrap">
                     <i class="fa-solid fa-trophy mr-1"></i> Leaderboard
                 </button>
                 ${state.currentUser.role === 'player' ? `
-                    <button onclick="window.navigate('submit')" class="${state.view === 'submit' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition mx-2 py-2">
+                    <button onclick="window.navigate('submit')" class="${state.view === 'submit' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition py-2 whitespace-nowrap">
                         <i class="fa-solid fa-upload mr-1"></i> Submit Score
                     </button>
                 ` : ''}
                 ${state.currentUser.role === 'admin' ? `
-                    <button onclick="window.navigate('admin')" class="${state.view === 'admin' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition mx-2 py-2">
+                    <button onclick="window.navigate('admin')" class="${state.view === 'admin' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition py-2 whitespace-nowrap">
                         <i class="fa-solid fa-gear mr-1"></i> Manage
                     </button>
                 ` : ''}
             `;
 
             return `
-                <nav class="bg-slate-800 border-b border-slate-700 py-4 mb-8 rounded-b-xl shadow-lg">
-                    <div class="flex flex-col sm:flex-row justify-between items-center px-6">
-                        <div class="text-xl font-bold tracking-wider text-brand-500 mb-4 sm:mb-0 flex items-center">
+                <nav class="bg-slate-800 border-b border-slate-700 py-4 mb-8 rounded-b-xl shadow-lg relative">
+                    <div class="flex flex-col lg:flex-row justify-between items-center px-4 sm:px-6 h-full relative">
+                        <div class="text-xl font-bold tracking-wider text-brand-500 mb-4 lg:mb-0 flex items-center shrink-0 w-full lg:w-1/3 justify-center lg:justify-start">
                             <i class="fa-solid fa-gamepad mr-2"></i>ROSTER GENERATOR
-                            ${API_URL === '' ? '<span class="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-triangle-exclamation"></i> Offline Mode</span>' : 
-                            (isOnline ? '<span class="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-cloud"></i> Online</span>' : '<span class="text-xs bg-red-500/20 text-red-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-cloud-arrow-down"></i> Error</span>')}
+                            ${API_URL === '' ? '<span class="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-triangle-exclamation"></i> Offline Mode</span>' : 
+                            (isOnline ? '<span class="text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-cloud"></i> Online</span>' : '<span class="text-[10px] bg-red-500/20 text-red-500 px-2 py-1 rounded-full ml-3"><i class="fa-solid fa-cloud-arrow-down"></i> Error</span>')}
                         </div>
-                        <div class="flex items-center gap-2 sm:gap-6">
+                        
+                        <div class="flex justify-center items-center gap-4 sm:gap-6 mb-4 lg:mb-0 w-full lg:w-1/3 lg:absolute lg:left-1/2 lg:-translate-x-1/2 overflow-x-auto text-sm sm:text-base px-2">
                             ${navLinks}
                         </div>
-                        <div class="mt-4 sm:mt-0 flex items-center bg-slate-700 px-4 py-2 rounded-full">
-                            <i class="fa-solid fa-user-circle text-xl text-slate-300 mr-2"></i>
-                            <span class="mr-4 font-medium">${state.currentUser.username} <span class="text-xs text-brand-400">(${state.currentUser.role})</span></span>
+
+                        <div class="flex items-center justify-center lg:justify-end bg-slate-700 px-4 py-2 rounded-full w-fit lg:w-1/3 text-sm sm:text-base shrink-0">
+                            <i class="fa-solid fa-user-circle text-lg sm:text-xl text-slate-300 mr-2"></i>
+                            <span class="mr-4 font-medium">${state.currentUser.username} <span class="text-xs text-brand-400 hidden sm:inline">(${state.currentUser.role})</span></span>
                             <button onclick="window.logout()" class="text-red-400 hover:text-red-300 transition" title="Logout">
                                 <i class="fa-solid fa-sign-out-alt"></i>
                             </button>
@@ -544,29 +565,29 @@
         function renderLogin() {
             return `
                 <div class="flex-grow flex items-center justify-center fade-in pt-10">
-                    <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md">
+                    <div class="bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md mx-4">
                         <div class="text-center mb-8">
-                            <i class="fa-solid fa-gamepad text-5xl text-brand-500 mb-3"></i>
-                            <h2 class="text-3xl font-bold">Roster Generator</h2>
+                            <i class="fa-solid fa-gamepad text-4xl sm:text-5xl text-brand-500 mb-3"></i>
+                            <h2 class="text-2xl sm:text-3xl font-bold">Roster Generator</h2>
                                 <br>
                                 <br>
 
-                        <form onsubmit="event.preventDefault(); window.login(this.username.value, this.password.value);" class="space-y-5">
+                        <form onsubmit="event.preventDefault(); window.login(this.username.value, this.password.value);" class="space-y-4 sm:space-y-5">
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-1">Username</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-user"></i></div>
-                                    <input type="text" name="username" required class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="Masukkan username">
+                                    <input type="text" name="username" required class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-10 pr-4 py-2.5 sm:py-3 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="Masukkan username">
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-1">Password</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-lock"></i></div>
-                                    <input type="password" name="password" required class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="Masukkan password">
+                                    <input type="password" name="password" required class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-10 pr-4 py-2.5 sm:py-3 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="Masukkan password">
                                 </div>
                             </div>
-                            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-brand-500/30 transition duration-200">
+                            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2.5 sm:py-3 px-4 rounded-lg shadow-lg hover:shadow-brand-500/30 transition duration-200">
                                 Login Sekarang
                             </button>
                         </form>
@@ -655,24 +676,26 @@
                 if (data.rankings.length === 0) rows = `<tr><td colspan="100%" class="px-6 py-8 text-center text-slate-500">Belum ada data pemain.</td></tr>`;
 
                 viewHTML = `
-                    <div id="export-container" class="w-full bg-[#0f172a] rounded-xl relative pt-4 pb-2 px-2">
-                        <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
-                        <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
-                            <div class="overflow-x-auto custom-scrollbar pb-2">
-                                <table class="w-full text-left border-collapse">
-                                    <thead class="bg-slate-900">
-                                        <tr>
-                                            <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center sticky left-0 bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">#</th>
-                                            <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider sticky left-[48px] bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] min-w-[150px]">Player</th>
-                                            <th class="px-4 py-4 text-xs font-bold text-white bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap">Avg. <i class="fa-solid fa-sort-down align-top ml-1 text-brand-400"></i></th>
-                                            <th class="px-4 py-4 text-xs font-bold text-slate-300 bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap border-r border-slate-700">Avg. Score</th>
-                                            ${mapHeaders}
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-700">
-                                        ${rows}
-                                    </tbody>
-                                </table>
+                    <div class="w-full overflow-x-auto">
+                        <div id="export-container" class="min-w-fit bg-[#0f172a] rounded-xl relative pt-4 pb-2 px-2 mx-auto">
+                            <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
+                            <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
+                                <div class="overflow-x-auto custom-scrollbar pb-2">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead class="bg-slate-900">
+                                            <tr>
+                                                <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center sticky left-0 bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">#</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider sticky left-[48px] bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] min-w-[150px]">Player</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-white bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap">Avg. <i class="fa-solid fa-sort-down align-top ml-1 text-brand-400"></i></th>
+                                                <th class="px-4 py-4 text-xs font-bold text-slate-300 bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap border-r border-slate-700">Avg. Score</th>
+                                                ${mapHeaders}
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-700">
+                                            ${rows}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -701,10 +724,11 @@
                         if(map.mod === 'DT') bgColor = 'bg-[#9bc2e6]'; 
                         if(map.mod === 'TB') bgColor = 'bg-slate-300';
 
-                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold text-center align-middle border-b border-r border-black px-2 py-2 text-sm tracking-widest leading-none">${map.name}</th>`;
+                        // Menggunakan tinggi absolut h-[30px] dan div cell-center agar vertikal alignment mutlak
+                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold border-b border-r border-black p-0 tracking-widest leading-none h-[30px]"><div class="cell-center-center text-sm">${map.name}</div></th>`;
                         
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center align-middle border-r border-black border-b px-2 py-1.5 text-xs w-[120px] leading-none">Player</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center align-middle border-r border-black border-b px-2 py-1.5 text-xs w-[80px] leading-none">Score</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-black border-b p-0 w-[120px] leading-none h-[30px]"><div class="cell-center-center text-xs">Player</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-black border-b p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-center text-xs">Score</div></th>`;
 
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
@@ -717,10 +741,10 @@
                             
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-2 font-bold text-sm truncate max-w-[120px] leading-none">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans font-bold text-sm leading-none">${p.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center px-2 font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</div></td>`;
                             } else {
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-2 leading-none">-</td><td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans leading-none">-</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2">-</div></td><td class="${cellBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans">-</div></td>`;
                             }
                         }
 
@@ -732,13 +756,13 @@
 
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-2 text-sm truncate max-w-[120px] font-normal leading-none">${pObj ? pObj.username : '-'}</td>`;
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans text-sm font-normal leading-none">${backup.average.toLocaleString('en-US')}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center px-2 text-sm font-normal truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</div></td>`;
                         } else {
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-2 font-normal leading-none">-</td><td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans font-normal leading-none">-</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2 font-normal">-</div></td><td class="${subBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-normal">-</div></td>`;
                         }
 
-                        footRow += `<td colspan="2" class="${bgColor} text-black align-middle font-bold text-center border-r border-black px-2 py-2 font-sans text-[13px] leading-none">${total.toLocaleString('en-US')}</td>`;
+                        footRow += `<td colspan="2" class="${bgColor} text-black border-r border-black p-0 leading-none h-[30px]"><div class="cell-center-center font-bold font-sans text-[13px]">${total.toLocaleString('en-US')}</div></td>`;
                     });
 
                     theadRows += '</tr>';
@@ -766,7 +790,7 @@
                     let theadRows = '<tr>';
                     let tcol1Rows = '<tr class="border-b border-black">';
                     let bodyRows = ['', '', '', '']; 
-                    let footRow = '<tr class="border-t border-black text-[13px] text-black">';
+                    let footRow = '<tr class="border-t border-black text-black">';
                     
                     const bgColor = 'bg-[#c2c2f0]'; 
                     const hrColor = 'bg-[#ea9999]';
@@ -777,12 +801,12 @@
                     const backupColorNM = 'bg-[#e2efda]';
 
                     mmMaps.forEach(map => {
-                        theadRows += `<th colspan="4" class="${bgColor} text-black align-middle font-bold text-center border-b border-r border-black px-2 py-2 text-sm tracking-widest leading-none">${map.name}</th>`;
+                        theadRows += `<th colspan="4" class="${bgColor} text-black font-bold border-b border-r border-black p-0 tracking-widest leading-none h-[30px]"><div class="cell-center-center text-sm">${map.name}</div></th>`;
                         
-                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[120px] leading-none">Player</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[80px] leading-none">Score</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[100px] leading-none">Backup</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[80px] leading-none">Score</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center-center text-xs">Player</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-center text-xs">Score</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[100px] leading-none h-[30px]"><div class="cell-center-center text-xs">Backup</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-center text-xs">Score</div></th>`;
 
                         const statsHR = data.mapStats[`${map.id}_HR`] || [];
                         const statsHD = data.mapStats[`${map.id}_HD`] || [];
@@ -807,33 +831,32 @@
 
                             if (mainP) {
                                 const pObj = state.players.find(pl => pl.id === mainP.playerId);
-                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border-r border-b border-black px-2 py-2 font-bold text-sm truncate max-w-[120px] leading-none">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans font-bold text-sm leading-none">${mainP.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center px-2 font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-bold text-sm">${mainP.average.toLocaleString('en-US')}</div></td>`;
                             } else {
-                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border-r border-b border-black px-2 py-2 leading-none">-</td><td class="${mainColor} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans leading-none">-</td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2">-</div></td><td class="${mainColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans">-</div></td>`;
                             }
 
                             if (backupP) {
                                 const pObj = state.players.find(pl => pl.id === backupP.playerId);
-                                bodyRows[i] += `<td class="${backColor} text-black align-middle border-r border-b border-black px-2 py-2 text-sm truncate max-w-[100px] font-normal leading-none">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${backColor} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans text-sm font-normal leading-none">${backupP.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0 w-[100px] leading-none h-[30px]"><div class="cell-center px-2 text-sm font-normal truncate w-[100px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans text-sm font-normal">${backupP.average.toLocaleString('en-US')}</div></td>`;
                             } else {
-                                bodyRows[i] += `<td class="${backColor} text-black align-middle border-r border-b border-black px-2 py-2 font-normal leading-none">-</td><td class="${backColor} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans font-normal leading-none">-</td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2 font-normal">-</div></td><td class="${backColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-normal">-</div></td>`;
                             }
                         }
 
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-2 font-sans text-[13px] leading-none">${totalMapMain.toLocaleString('en-US')}</td>`;
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black align-middle text-center border-r border-b border-black px-2 py-2 font-sans text-[13px] font-normal leading-none">${totalMapBackup.toLocaleString('en-US')}</td>`;
+                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-center font-bold font-sans text-[13px]">${totalMapMain.toLocaleString('en-US')}</div></td>`;
+                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-center font-normal font-sans text-[13px]">${totalMapBackup.toLocaleString('en-US')}</div></td>`;
                     });
 
                     // TB MAPS
                     tbMaps.forEach(map => {
                         let tbBg = 'bg-[#e7e6e6]'; 
-                        let tbCell = 'bg-white';
                         
-                        theadRows += `<th colspan="2" class="${tbBg} text-black align-middle font-bold text-center border-b border-r border-black px-2 py-2 text-sm tracking-widest leading-none">${map.name}</th>`;
-                        tcol1Rows += `<th class="${tbBg} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[120px] leading-none">Player</th>`;
-                        tcol1Rows += `<th class="${tbBg} text-black align-middle font-bold text-center border-r border-b border-black px-2 py-1.5 text-xs w-[80px] leading-none">Score</th>`;
+                        theadRows += `<th colspan="2" class="${tbBg} text-black font-bold border-b border-r border-black p-0 tracking-widest leading-none h-[30px]"><div class="cell-center-center text-sm">${map.name}</div></th>`;
+                        tcol1Rows += `<th class="${tbBg} text-black font-bold border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center-center text-xs">Player</div></th>`;
+                        tcol1Rows += `<th class="${tbBg} text-black font-bold border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-center text-xs">Score</div></th>`;
 
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
@@ -845,10 +868,10 @@
                             let cellBg = (i % 2 === 0) ? 'bg-[#f8f8f8]' : 'bg-white'; 
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-2 font-bold text-sm truncate max-w-[120px] leading-none">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans font-bold text-sm leading-none">${p.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center px-2 font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</div></td>`;
                             } else {
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-2 leading-none">-</td><td class="${cellBg} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans leading-none">-</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2">-</div></td><td class="${cellBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans">-</div></td>`;
                             }
                         }
 
@@ -857,19 +880,19 @@
                         
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-2 text-sm truncate max-w-[120px] font-normal leading-none">${pObj ? pObj.username : '-'}</td>`;
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans text-sm font-normal leading-none">${backup.average.toLocaleString('en-US')}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[120px] leading-none h-[30px]"><div class="cell-center px-2 text-sm font-normal truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 w-[80px] leading-none h-[30px]"><div class="cell-center-right px-2 font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</div></td>`;
                         } else {
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-2 font-normal leading-none">-</td><td class="${subBg} text-black align-middle border-r border-b border-black px-2 py-2 text-right font-sans font-normal leading-none">-</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center px-2 font-normal">-</div></td><td class="${subBg} text-black border-r border-b border-black p-0 leading-none h-[30px]"><div class="cell-center-right px-2 font-sans font-normal">-</div></td>`;
                         }
 
                         if(!bodyRows[4]) bodyRows[4] = '';
                         const totalMMCols = mmMaps.length * 4;
                         if(totalMMCols > 0 && bodyRows[4] === '') {
-                            bodyRows[4] += `<td colspan="${totalMMCols}" class="bg-[#c2c2f0] border-r border-black border-t-0 text-transparent leading-none p-0 m-0"></td>`;
+                            bodyRows[4] += `<td colspan="${totalMMCols}" class="bg-[#c2c2f0] border-r border-black border-t-0 text-transparent leading-none h-[30px] p-0"></td>`;
                         }
                         
-                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black align-middle font-bold text-center border-r border-black px-2 py-2 font-sans text-[13px] leading-none">${totalTB.toLocaleString('en-US')}</td>`;
+                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black border-r border-black p-0 leading-none h-[30px]"><div class="cell-center-center font-bold font-sans text-[13px]">${totalTB.toLocaleString('en-US')}</div></td>`;
                     });
 
                     theadRows += '</tr>';
@@ -898,20 +921,22 @@
                 }
                 
                 viewHTML = `
-                    <div id="export-container" class="w-full bg-[#0f172a] rounded-xl relative pt-4 pb-2 px-2">
-                        <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
-                        ${rosterHTML}
+                    <div class="w-full overflow-x-auto pb-4">
+                        <div id="export-container" class="min-w-fit bg-[#0f172a] rounded-xl relative pt-4 pb-2 px-2 mx-auto">
+                            <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
+                            ${rosterHTML}
+                        </div>
                     </div>
                 `;
             }
 
             return `
                 <div class="fade-in w-full">
-                    <div class="flex flex-col sm:flex-row justify-between items-center mb-5 w-full">
-                        <div class="flex-1"></div>
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-5 w-full gap-4 sm:gap-0">
+                        <div class="flex-1 w-full sm:w-auto"></div>
                         
-                        <div id="export-dropdown-wrapper" class="flex flex-col items-center text-center flex-1">
-                            <select onchange="window.changeStage(this.value)" class="bg-transparent text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last">
+                        <div id="export-dropdown-wrapper" class="flex flex-col items-center text-center flex-1 w-full sm:w-auto">
+                            <select onchange="window.changeStage(this.value)" class="bg-transparent text-2xl sm:text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last px-2">
                                 <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>QUALIFIER - PLAYER SCORES ▾</option>
                                 <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>RO32 - ROSTER ▾</option>
                                 <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>RO16 - ROSTER ▾</option>
@@ -921,7 +946,7 @@
                             </select>
                         </div>
 
-                        <div class="flex-1 flex justify-end">
+                        <div class="flex-1 flex justify-center sm:justify-end w-full sm:w-auto">
                             <button onclick="window.openExportModal()" class="bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:shadow-brand-500/30 transition duration-200 text-sm flex items-center">
                                 <i class="fa-solid fa-camera mr-2"></i> Export Roster
                             </button>
@@ -968,19 +993,19 @@
                         let runCols = '';
                         for(let r=1; r<=3; r++){
                             runCols += `
-                                <td class="px-3 py-3 border-r border-slate-700/50 align-middle">
+                                <td class="px-2 sm:px-3 py-3 border-r border-slate-700/50 align-middle">
                                     <div class="flex flex-col gap-2 w-full max-w-[120px] mx-auto">
-                                        <div class="flex items-center gap-1.5 w-full">
-                                            <span class="text-[11px] font-bold text-emerald-400 w-5 text-left shrink-0">NM</span>
-                                            <input type="text" name="score_${map.id}_${r}_NM" value="${getScoreValue(map.id, r, 'NM')}" oninput="window.validateScore(this)" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-sm text-center" placeholder="0">
+                                        <div class="flex items-center gap-1 sm:gap-1.5 w-full">
+                                            <span class="text-[10px] sm:text-[11px] font-bold text-emerald-400 w-5 text-left shrink-0">NM</span>
+                                            <input type="text" name="score_${map.id}_${r}_NM" value="${getScoreValue(map.id, r, 'NM')}" oninput="window.validateScore(this)" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs sm:text-sm text-center" placeholder="0">
                                         </div>
-                                        <div class="flex items-center gap-1.5 w-full">
-                                            <span class="text-[11px] font-bold text-amber-500 w-5 text-left shrink-0">HD</span>
-                                            <input type="text" name="score_${map.id}_${r}_HD" value="${getScoreValue(map.id, r, 'HD')}" oninput="window.validateScore(this)" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-sm text-center" placeholder="0">
+                                        <div class="flex items-center gap-1 sm:gap-1.5 w-full">
+                                            <span class="text-[10px] sm:text-[11px] font-bold text-amber-500 w-5 text-left shrink-0">HD</span>
+                                            <input type="text" name="score_${map.id}_${r}_HD" value="${getScoreValue(map.id, r, 'HD')}" oninput="window.validateScore(this)" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs sm:text-sm text-center" placeholder="0">
                                         </div>
-                                        <div class="flex items-center gap-1.5 w-full">
-                                            <span class="text-[11px] font-bold text-red-500 w-5 text-left shrink-0">HR</span>
-                                            <input type="text" name="score_${map.id}_${r}_HR" value="${getScoreValue(map.id, r, 'HR')}" oninput="window.validateScore(this)" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-sm text-center" placeholder="0">
+                                        <div class="flex items-center gap-1 sm:gap-1.5 w-full">
+                                            <span class="text-[10px] sm:text-[11px] font-bold text-red-500 w-5 text-left shrink-0">HR</span>
+                                            <input type="text" name="score_${map.id}_${r}_HR" value="${getScoreValue(map.id, r, 'HR')}" oninput="window.validateScore(this)" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs sm:text-sm text-center" placeholder="0">
                                         </div>
                                     </div>
                                 </td>
@@ -988,7 +1013,7 @@
                         }
                         tableRows += `
                             <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition">
-                                <td class="px-6 py-4 font-medium text-slate-200 border-r border-slate-700/50 w-1/4">
+                                <td class="px-4 sm:px-6 py-4 font-medium text-slate-200 border-r border-slate-700/50 w-1/4">
                                     ${map.name}
                                 </td>
                                 ${runCols}
@@ -998,17 +1023,17 @@
                         let runCols = '';
                         for(let r=1; r<=3; r++){
                             runCols += `
-                                <td class="px-3 py-4 border-r border-slate-700/50">
+                                <td class="px-2 sm:px-3 py-4 border-r border-slate-700/50">
                                     <div class="relative w-full max-w-[120px] mx-auto">
-                                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-500 font-bold text-xs">#</div>
-                                        <input type="text" name="score_${map.id}_${r}" value="${getScoreValue(map.id, r)}" oninput="window.validateScore(this)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-6 pr-2 py-2 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-mono text-sm text-left" placeholder="0">
+                                        <div class="absolute inset-y-0 left-0 pl-2 sm:pl-2.5 flex items-center pointer-events-none text-slate-500 font-bold text-xs">#</div>
+                                        <input type="text" name="score_${map.id}_${r}" value="${getScoreValue(map.id, r)}" oninput="window.validateScore(this)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-5 sm:pl-6 pr-1 sm:pr-2 py-2 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-mono text-xs sm:text-sm text-left" placeholder="0">
                                     </div>
                                 </td>
                             `;
                         }
                         tableRows += `
                             <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition">
-                                <td class="px-6 py-4 font-medium text-slate-200 border-r border-slate-700/50 w-1/4">${map.name}</td>
+                                <td class="px-4 sm:px-6 py-4 font-medium text-slate-200 border-r border-slate-700/50 w-1/4">${map.name}</td>
                                 ${runCols}
                             </tr>
                         `;
@@ -1023,7 +1048,7 @@
             return `
                 <div class="fade-in max-w-5xl mx-auto w-full">
                     <div class="flex flex-col mb-6 items-center">
-                        <select onchange="window.changeStage(this.value)" class="bg-transparent text-3xl font-bold text-white mb-1 appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last">
+                        <select onchange="window.changeStage(this.value)" class="bg-transparent text-2xl sm:text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last px-2">
                             <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>Form Submission: QUALIFIER ▾</option>
                             <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>Form Submission: RO32 ▾</option>
                             <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>Form Submission: RO16 ▾</option>
@@ -1034,14 +1059,14 @@
                     </div>
                     
                     <form onsubmit="window.saveScores(event, this)" class="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden">
-                        <div class="overflow-x-auto">
+                        <div class="overflow-x-auto w-full">
                             <table class="w-full text-left border-collapse min-w-[600px]">
                                 <thead class="bg-slate-900">
                                     <tr>
-                                        <th class="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-1/4 border-r border-slate-700">MAPPOOL</th>
-                                        <th class="px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/4">RUN 1</th>
-                                        <th class="px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/4">RUN 2</th>
-                                        <th class="px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center w-1/4">RUN 3</th>
+                                        <th class="px-4 sm:px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-1/4 border-r border-slate-700">MAPPOOL</th>
+                                        <th class="px-2 sm:px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/4">RUN 1</th>
+                                        <th class="px-2 sm:px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/4">RUN 2</th>
+                                        <th class="px-2 sm:px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center w-1/4">RUN 3</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1049,7 +1074,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="p-6 bg-slate-900 border-t border-slate-700 flex justify-end">
+                        <div class="p-4 sm:p-6 bg-slate-900 border-t border-slate-700 flex justify-end">
                             <button type="submit" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 transition duration-200 flex items-center justify-center">
                                 Save Scores
                             </button>
@@ -1104,12 +1129,12 @@
 
             return `
                 <div class="fade-in w-full">
-                    <h2 class="text-3xl font-bold text-white mb-8">Admin Dashboard</h2>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 text-center sm:text-left">Admin Dashboard</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                         
                         <div class="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden flex flex-col">
-                            <div class="p-6 bg-slate-900 border-b border-slate-700">
-                                <h3 class="text-xl font-bold text-brand-400 flex items-center">
+                            <div class="p-4 sm:p-6 bg-slate-900 border-b border-slate-700">
+                                <h3 class="text-lg sm:text-xl font-bold text-brand-400 flex items-center">
                                     <i class="fa-solid fa-users mr-3"></i> Manage Players
                                 </h3>
                             </div>
@@ -1130,33 +1155,37 @@
                         </div>
 
                         <div class="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden flex flex-col">
-                            <div class="p-6 bg-slate-900 border-b border-slate-700">
-                                <h3 class="text-xl font-bold text-emerald-400 flex items-center">
+                            <div class="p-4 sm:p-6 bg-slate-900 border-b border-slate-700">
+                                <h3 class="text-lg sm:text-xl font-bold text-emerald-400 flex items-center">
                                     <i class="fa-solid fa-music mr-3"></i> Manage Mappool
                                 </h3>
                             </div>
                             <div class="p-4 border-b border-slate-700">
                                 <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value, this.mapName.value); this.reset();" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-24 flex-shrink-0">
-                                        <option value="Qualifier" ${state.adminStage === 'Qualifier' ? 'selected' : ''}>Qualifier</option>
-                                        <option value="RO32" ${state.adminStage === 'RO32' ? 'selected' : ''}>RO32</option>
-                                        <option value="RO16" ${state.adminStage === 'RO16' ? 'selected' : ''}>RO16</option>
-                                        <option value="Semi Final" ${state.adminStage === 'Semi Final' ? 'selected' : ''}>Semi Final</option>
-                                        <option value="Final" ${state.adminStage === 'Final' ? 'selected' : ''}>Final</option>
-                                        <option value="Grand Final" ${state.adminStage === 'Grand Final' ? 'selected' : ''}>Grand Final</option>
-                                    </select>
-                                    <select name="mapMod" required onchange="window.changeAdminMod(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-1 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-16 flex-shrink-0 text-center">
-                                        <option value="NM" ${state.adminMod === 'NM' ? 'selected' : ''}>NM</option>
-                                        <option value="HD" ${state.adminMod === 'HD' ? 'selected' : ''}>HD</option>
-                                        <option value="HR" ${state.adminMod === 'HR' ? 'selected' : ''}>HR</option>
-                                        <option value="DT" ${state.adminMod === 'DT' ? 'selected' : ''}>DT</option>
-                                        <option value="MM" ${state.adminMod === 'MM' ? 'selected' : ''}>MM</option>
-                                        <option value="TB" ${state.adminMod === 'TB' ? 'selected' : ''}>TB</option>
-                                    </select>
-                                    <input type="text" name="mapName" required placeholder="Nama Map (ex: NM5)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500">
-                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0">
-                                        <i class="fa-solid fa-plus mr-1"></i> Add
-                                    </button>
+                                    <div class="flex gap-2">
+                                        <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-24 flex-shrink-0 text-sm">
+                                            <option value="Qualifier" ${state.adminStage === 'Qualifier' ? 'selected' : ''}>Qualifier</option>
+                                            <option value="RO32" ${state.adminStage === 'RO32' ? 'selected' : ''}>RO32</option>
+                                            <option value="RO16" ${state.adminStage === 'RO16' ? 'selected' : ''}>RO16</option>
+                                            <option value="Semi Final" ${state.adminStage === 'Semi Final' ? 'selected' : ''}>Semi Final</option>
+                                            <option value="Final" ${state.adminStage === 'Final' ? 'selected' : ''}>Final</option>
+                                            <option value="Grand Final" ${state.adminStage === 'Grand Final' ? 'selected' : ''}>Grand Final</option>
+                                        </select>
+                                        <select name="mapMod" required onchange="window.changeAdminMod(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-1 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-16 flex-shrink-0 text-center text-sm">
+                                            <option value="NM" ${state.adminMod === 'NM' ? 'selected' : ''}>NM</option>
+                                            <option value="HD" ${state.adminMod === 'HD' ? 'selected' : ''}>HD</option>
+                                            <option value="HR" ${state.adminMod === 'HR' ? 'selected' : ''}>HR</option>
+                                            <option value="DT" ${state.adminMod === 'DT' ? 'selected' : ''}>DT</option>
+                                            <option value="MM" ${state.adminMod === 'MM' ? 'selected' : ''}>MM</option>
+                                            <option value="TB" ${state.adminMod === 'TB' ? 'selected' : ''}>TB</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex gap-2 flex-1">
+                                        <input type="text" name="mapName" required placeholder="Nama Map (ex: NM5)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 text-sm">
+                                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0">
+                                            <i class="fa-solid fa-plus mr-1"></i> Add
+                                        </button>
+                                    </div>
                                 </form>
                             </div>
                             <div class="flex-grow overflow-auto max-h-96 custom-scrollbar">
@@ -1200,7 +1229,7 @@
             if (!API_URL) {
                 state.players = [
                     { id: 'admin1', username: 'admin', password: 'admin', role: 'admin' },
-                    
+                    { id: 'p1', username: 'faker', password: '123', role: 'player' }
                 ];
                 const initialMaps = [
                     { id: 'nm1', stage: 'Qualifier', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier', mod: 'NM', name: 'NM4' },
