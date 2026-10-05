@@ -61,12 +61,36 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
+        /* CLASS UNTUK CAPTURE MODE */
+        .capture-mode #navbar, 
+        .capture-mode footer, 
+        .capture-mode .hide-in-capture {
+            display: none !important;
+        }
+        .capture-mode #app-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .capture-mode body {
+            background-color: #0f172a; 
+        }
+        /* Munculkan judul statis HANYA SAAT mode capture aktif */
+        .capture-mode #export-static-title {
+            display: block !important; 
+        }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col" id="main-body">
 
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none"></div>
+
+    <!-- Tombol Mengambang untuk Exit Capture Mode -->
+    <button id="exit-capture-btn" onclick="toggleCaptureMode(false)" class="hidden fixed bottom-6 right-6 bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.6)] transition duration-200 z-50 flex items-center fade-in cursor-pointer">
+        <i class="fa-solid fa-times mr-2 text-xl"></i> Exit Capture Mode
+    </button>
 
     <!-- Main App Container -->
     <div id="app" class="flex-grow flex flex-col w-full max-w-[95%] mx-auto px-2 sm:px-4 lg:px-8 transition-all duration-300">
@@ -91,7 +115,8 @@
             adminMod: localStorage.getItem('adminMod') || 'NM',
             players: [],
             beatmaps: [],
-            scores: []
+            scores: [],
+            isCaptureMode: false
         };
 
         let isOnline = false;
@@ -132,6 +157,22 @@
         window.changeAdminMod = function(mod) {
             state.adminMod = mod;
             localStorage.setItem('adminMod', mod);
+        }
+
+        // --- CAPTURE MODE TOGGLE ---
+        window.toggleCaptureMode = function(isCapturing) {
+            state.isCaptureMode = isCapturing;
+            const body = document.getElementById('main-body');
+            const exitBtn = document.getElementById('exit-capture-btn');
+            
+            if (isCapturing) {
+                body.classList.add('capture-mode');
+                exitBtn.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll ke atas agar hasil snip rapi
+            } else {
+                body.classList.remove('capture-mode');
+                exitBtn.classList.add('hidden');
+            }
         }
 
         // --- DATABASE FETCH (CLOUDFLARE) ---
@@ -515,7 +556,7 @@
             else if (state.currentStage === 'Grand Final') stageTitle = 'GRAND FINAL - ROSTER';
 
             if (isQualifier) {
-                // --- TAMPILAN QUALIFIER ---
+                // --- TAMPILAN QUALIFIER (TABLE MURNI) ---
                 let mapHeaders = '';
                 currentStageMaps.forEach(map => {
                     if (map.mod === 'MM') {
@@ -581,7 +622,9 @@
 
                 viewHTML = `
                     <div class="w-full overflow-x-auto pb-4">
-                        <div class="min-w-fit rounded-xl relative pt-4 pb-2 mx-auto">
+                        <div id="export-container" class="min-w-fit bg-[#0f172a] rounded-xl relative pt-4 pb-2 px-2 mx-auto">
+                            <!-- Judul ini dipastikan TIDAK tercetak saat qualifier karena export button di hide -->
+                            <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
                             <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
                                 <div class="overflow-x-auto custom-scrollbar pb-2">
                                     <table class="w-full text-left border-collapse">
@@ -604,7 +647,7 @@
                     </div>
                 `;
             } else {
-                // --- TAMPILAN ROSTER GRID BARU ---
+                // --- TAMPILAN ROSTER GRID BARU (TABLE CLASSIC COMPACT) ---
                 
                 const generateRegularGrid = (modsArray) => {
                     let mapsInGroup = [];
@@ -622,9 +665,9 @@
                     mapsInGroup.forEach(map => {
                         let bgColor = getMapColor(map.mod);
 
-                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold text-center align-middle border border-black px-2 py-1.5 text-sm tracking-widest">${map.name}</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center align-middle border border-black px-2 py-1.5 text-xs w-[120px]">Player</th>`;
-                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center align-middle border border-black px-2 py-1.5 text-xs w-[80px]">Score</th>`;
+                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold text-center align-middle border border-black px-2 py-1 text-sm tracking-widest">${map.name}</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center align-middle border border-black px-2 py-1 text-xs w-[120px]">Player</th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold text-center align-middle border border-black px-2 py-1 text-xs w-[80px]">Score</th>`;
 
                         const stats = data.mapStats[map.id] || [];
                         const top3 = stats.slice(0, 3);
@@ -637,10 +680,10 @@
                             
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1 font-bold text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1 text-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-0.5 font-bold text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-0.5 text-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</td>`;
                             } else {
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1">-</td><td class="${cellBg} text-black align-middle border border-black px-2 py-1 text-right font-sans">-</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-0.5">-</td><td class="${cellBg} text-black align-middle border border-black px-2 py-0.5 text-right font-sans">-</td>`;
                             }
                         }
 
@@ -648,13 +691,13 @@
 
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 text-sm truncate max-w-[120px] font-normal">${pObj ? pObj.username : '-'}</td>`;
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 text-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-0.5 text-sm truncate max-w-[120px] font-normal">${pObj ? pObj.username : '-'}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-0.5 text-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</td>`;
                         } else {
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 font-normal">-</td><td class="${subBg} text-black align-middle border border-black px-2 py-1 text-right font-sans font-normal">-</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-0.5 font-normal">-</td><td class="${subBg} text-black align-middle border border-black px-2 py-0.5 text-right font-sans font-normal">-</td>`;
                         }
 
-                        footRow += `<td colspan="2" class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1.5 font-sans text-[13px]">${total.toLocaleString('en-US')}</td>`;
+                        footRow += `<td colspan="2" class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1 font-sans text-[13px]">${total.toLocaleString('en-US')}</td>`;
                     });
 
                     theadRows += '</tr>';
@@ -683,7 +726,7 @@
 
                     let theadRows = '<tr>';
                     let tcol1Rows = '<tr>';
-                    let bodyRows = ['', '', '', '', '']; 
+                    let bodyRows = ['', '', '', '', '']; // 5 baris di dalam tbody 
                     
                     const hrColor = getMapColor('HR');
                     const hdColor = getMapColor('HD');
@@ -695,7 +738,7 @@
                     mmMaps.forEach(map => {
                         let bgColor = getMapColor('MM');
 
-                        theadRows += `<th colspan="4" class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1.5 text-sm tracking-widest">${map.name}</th>`;
+                        theadRows += `<th colspan="4" class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1 text-sm tracking-widest">${map.name}</th>`;
                         
                         tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1 text-xs w-[120px]">Player</th>`;
                         tcol1Rows += `<th class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1 text-xs w-[80px]">Score</th>`;
@@ -725,24 +768,24 @@
 
                             if (mainP) {
                                 const pObj = state.players.find(pl => pl.id === mainP.playerId);
-                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border border-black px-2 py-1 font-bold text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border border-black px-2 py-1 text-right font-sans font-bold text-sm">${mainP.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border border-black px-2 py-0.5 font-bold text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border border-black px-2 py-0.5 text-right font-sans font-bold text-sm">${mainP.average.toLocaleString('en-US')}</td>`;
                             } else {
-                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border border-black px-2 py-1">-</td><td class="${mainColor} text-black align-middle border border-black px-2 py-1 text-right font-sans">-</td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black align-middle border border-black px-2 py-0.5">-</td><td class="${mainColor} text-black align-middle border border-black px-2 py-0.5 text-right font-sans">-</td>`;
                             }
 
                             if (backupP) {
                                 const pObj = state.players.find(pl => pl.id === backupP.playerId);
-                                bodyRows[i] += `<td class="${backColor} text-black align-middle border border-black px-2 py-1 text-sm truncate max-w-[100px] font-normal">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${backColor} text-black align-middle border border-black px-2 py-1 text-right font-sans text-sm font-normal">${backupP.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black align-middle border border-black px-2 py-0.5 text-sm truncate max-w-[100px] font-normal">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black align-middle border border-black px-2 py-0.5 text-right font-sans text-sm font-normal">${backupP.average.toLocaleString('en-US')}</td>`;
                             } else {
-                                bodyRows[i] += `<td class="${backColor} text-black align-middle border border-black px-2 py-1 font-normal">-</td><td class="${backColor} text-black align-middle border border-black px-2 py-1 text-right font-sans font-normal">-</td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black align-middle border border-black px-2 py-0.5 font-normal">-</td><td class="${backColor} text-black align-middle border border-black px-2 py-0.5 text-right font-sans font-normal">-</td>`;
                             }
                         }
 
-                        // Baris 4: MM Total Main & Total Backup (sejajar dengan TB backup)
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1.5 font-sans text-[13px]">${totalMapMain.toLocaleString('en-US')}</td>`;
-                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black align-middle text-center border border-black px-2 py-1.5 font-sans text-[13px] font-normal">${totalMapBackup.toLocaleString('en-US')}</td>`;
+                        // Baris 4: MM Total Main & Total Backup 
+                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black align-middle font-bold text-center border border-black px-2 py-1 font-sans text-[13px]">${totalMapMain.toLocaleString('en-US')}</td>`;
+                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black align-middle text-center border border-black px-2 py-1 font-sans text-[13px] font-normal">${totalMapBackup.toLocaleString('en-US')}</td>`;
                         
                         // Baris 5: Ruang kosong agar TB Total bisa berada di bawah
                         bodyRows[4] += `<td colspan="4" class="${bgColor} border border-black p-0 border-t-0"></td>`;
@@ -752,7 +795,7 @@
                     tbMaps.forEach(map => {
                         let tbBg = getMapColor('TB');
                         
-                        theadRows += `<th colspan="2" class="${tbBg} text-black align-middle font-bold text-center border border-black px-2 py-1.5 text-sm tracking-widest">${map.name}</th>`;
+                        theadRows += `<th colspan="2" class="${tbBg} text-black align-middle font-bold text-center border border-black px-2 py-1 text-sm tracking-widest">${map.name}</th>`;
                         tcol1Rows += `<th class="${tbBg} text-black align-middle font-bold text-center border border-black px-2 py-1 text-xs w-[120px]">Player</th>`;
                         tcol1Rows += `<th class="${tbBg} text-black align-middle font-bold text-center border border-black px-2 py-1 text-xs w-[80px]">Score</th>`;
 
@@ -766,10 +809,10 @@
                             let cellBg = (i % 2 === 0) ? 'bg-[#f8f8f8]' : 'bg-white'; 
                             if (p) {
                                 const pObj = state.players.find(pl => pl.id === p.playerId);
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1 font-bold text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1 text-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-0.5 font-bold text-sm truncate max-w-[120px]">${pObj ? pObj.username : '-'}</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-0.5 text-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</td>`;
                             } else {
-                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-1">-</td><td class="${cellBg} text-black align-middle border border-black px-2 py-1 text-right font-sans">-</td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black align-middle border border-black px-2 py-0.5">-</td><td class="${cellBg} text-black align-middle border border-black px-2 py-0.5 text-right font-sans">-</td>`;
                             }
                         }
 
@@ -777,14 +820,14 @@
                         
                         if (backup) {
                             const pObj = state.players.find(pl => pl.id === backup.playerId);
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 text-sm truncate max-w-[120px] font-normal">${pObj ? pObj.username : '-'}</td>`;
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 text-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-0.5 text-sm truncate max-w-[120px] font-normal">${pObj ? pObj.username : '-'}</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-0.5 text-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</td>`;
                         } else {
-                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-1 font-normal">-</td><td class="${subBg} text-black align-middle border border-black px-2 py-1 text-right font-sans font-normal">-</td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black align-middle border border-black px-2 py-0.5 font-normal">-</td><td class="${subBg} text-black align-middle border border-black px-2 py-0.5 text-right font-sans font-normal">-</td>`;
                         }
 
                         // Baris 5: Total TB
-                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black align-middle font-bold text-center border border-black px-2 py-1.5 font-sans text-[13px]">${totalTB.toLocaleString('en-US')}</td>`;
+                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black align-middle font-bold text-center border border-black px-2 py-1 font-sans text-[13px]">${totalTB.toLocaleString('en-US')}</td>`;
                     });
 
                     theadRows += '</tr>';
@@ -816,8 +859,8 @@
                 
                 viewHTML = `
                     <div class="w-full overflow-x-auto pb-4 pt-1">
-                        <div class="w-fit min-w-full rounded-xl relative pt-6 pb-2 mx-auto flex flex-col items-center">
-                            <h2 class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center">${stageTitle}</h2>
+                        <div id="export-container" class="w-fit min-w-full bg-[#0f172a] rounded-xl relative pt-6 pb-2 px-6 mx-auto flex flex-col items-center">
+                            <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
                             ${rosterHTML}
                         </div>
                     </div>
@@ -841,6 +884,11 @@
                         </div>
 
                         <div class="flex-1 flex justify-center sm:justify-end w-full sm:w-auto">
+                            ${!isQualifier ? `
+                            <button id="export-button" onclick="window.toggleCaptureMode(true)" class="bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:shadow-brand-500/30 transition duration-200 text-sm flex items-center">
+                                <i class="fa-solid fa-camera mr-2"></i> Capture Roster
+                            </button>
+                            ` : ''}
                         </div>
                     </div>
                     ${viewHTML}
@@ -1051,9 +1099,9 @@
                                     <i class="fa-solid fa-music mr-3"></i> Manage Mappool
                                 </h3>
                             </div>
-                            <div class="p-4 border-b border-slate-700">
-                                <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value);" class="flex gap-2 w-fit">
-                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 w-[140px] flex-shrink-0 text-sm">
+                            <div class="p-4 border-b border-slate-700 flex flex-col sm:flex-row gap-2">
+                                <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value);" class="flex gap-2 w-full sm:w-auto">
+                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-emerald-500 w-[140px] text-sm">
                                         <option value="Qualifier" ${state.adminStage === 'Qualifier' ? 'selected' : ''}>Qualifier</option>
                                         <option value="RO32" ${state.adminStage === 'RO32' ? 'selected' : ''}>RO32</option>
                                         <option value="RO16" ${state.adminStage === 'RO16' ? 'selected' : ''}>RO16</option>
@@ -1061,7 +1109,7 @@
                                         <option value="Final" ${state.adminStage === 'Final' ? 'selected' : ''}>Final</option>
                                         <option value="Grand Final" ${state.adminStage === 'Grand Final' ? 'selected' : ''}>Grand Final</option>
                                     </select>
-                                    <select name="mapMod" required onchange="window.changeAdminMod(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 w-[80px] flex-shrink-0 text-center text-sm">
+                                    <select name="mapMod" required onchange="window.changeAdminMod(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-emerald-500 w-[80px] text-center text-sm">
                                         <option value="NM" ${state.adminMod === 'NM' ? 'selected' : ''}>NM</option>
                                         <option value="HD" ${state.adminMod === 'HD' ? 'selected' : ''}>HD</option>
                                         <option value="HR" ${state.adminMod === 'HR' ? 'selected' : ''}>HR</option>
@@ -1069,7 +1117,7 @@
                                         <option value="MM" ${state.adminMod === 'MM' ? 'selected' : ''}>MM</option>
                                         <option value="TB" ${state.adminMod === 'TB' ? 'selected' : ''}>TB</option>
                                     </select>
-                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap flex-shrink-0 text-sm">
+                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap text-sm">
                                         <i class="fa-solid fa-plus mr-1"></i> Add
                                     </button>
                                 </form>
