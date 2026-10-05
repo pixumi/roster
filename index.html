@@ -61,32 +61,12 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
-        /* CLASS UNTUK CAPTURE MODE */
-        .capture-mode #navbar, 
-        .capture-mode footer, 
-        .capture-mode .hide-in-capture {
-            display: none !important;
-        }
-        .capture-mode #app-container {
-            max-width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-        .capture-mode body {
-            background-color: #0f172a; /* Pastikan bg tetap gelap saat di-snipping */
-        }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col" id="main-body">
 
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none"></div>
-
-    <!-- Tombol Mengambang untuk Exit Capture Mode -->
-    <button id="exit-capture-btn" onclick="toggleCaptureMode(false)" class="hidden fixed bottom-6 right-6 bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.6)] transition duration-200 z-50 flex items-center fade-in cursor-pointer">
-        <i class="fa-solid fa-times mr-2 text-xl"></i> Exit Capture Mode
-    </button>
 
     <!-- Main App Container -->
     <div id="app" class="flex-grow flex flex-col w-full max-w-[95%] mx-auto px-2 sm:px-4 lg:px-8 transition-all duration-300">
@@ -111,8 +91,7 @@
             adminMod: localStorage.getItem('adminMod') || 'NM',
             players: [],
             beatmaps: [],
-            scores: [],
-            isCaptureMode: false
+            scores: []
         };
 
         let isOnline = false;
@@ -153,22 +132,6 @@
         window.changeAdminMod = function(mod) {
             state.adminMod = mod;
             localStorage.setItem('adminMod', mod);
-        }
-
-        // --- CAPTURE MODE TOGGLE ---
-        window.toggleCaptureMode = function(isCapturing) {
-            state.isCaptureMode = isCapturing;
-            const body = document.getElementById('main-body');
-            const exitBtn = document.getElementById('exit-capture-btn');
-            
-            if (isCapturing) {
-                body.classList.add('capture-mode');
-                exitBtn.classList.remove('hidden');
-                window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll ke atas agar hasil snip rapi
-            } else {
-                body.classList.remove('capture-mode');
-                exitBtn.classList.add('hidden');
-            }
         }
 
         // --- DATABASE FETCH (CLOUDFLARE) ---
@@ -442,7 +405,7 @@
             if(mod === 'HR') return 'bg-[#ea9999]'; 
             if(mod === 'DT') return 'bg-[#9bc2e6]'; 
             if(mod === 'MM') return 'bg-[#c2c2f0]';
-            if(mod === 'TB') return 'bg-[#d9d9d9]'; // UPDATE: Abu-abu yang lebih tegas dan gelap dari sebelumnya
+            if(mod === 'TB') return 'bg-[#d9d9d9]';
             return 'bg-slate-300';
         }
 
@@ -552,7 +515,7 @@
             else if (state.currentStage === 'Grand Final') stageTitle = 'GRAND FINAL - ROSTER';
 
             if (isQualifier) {
-                // --- TAMPILAN QUALIFIER (TABLE MURNI) ---
+                // --- TAMPILAN QUALIFIER ---
                 let mapHeaders = '';
                 currentStageMaps.forEach(map => {
                     if (map.mod === 'MM') {
@@ -618,9 +581,7 @@
 
                 viewHTML = `
                     <div class="w-full overflow-x-auto pb-4">
-                        <div id="export-container" class="min-w-fit bg-[#0f172a] rounded-xl relative pt-4 pb-2 px-2 mx-auto">
-                            <!-- Judul ini dipastikan TIDAK tercetak saat qualifier karena capture mode disembunyikan -->
-                            <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
+                        <div class="min-w-fit rounded-xl relative pt-4 pb-2 mx-auto">
                             <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
                                 <div class="overflow-x-auto custom-scrollbar pb-2">
                                     <table class="w-full text-left border-collapse">
@@ -643,7 +604,7 @@
                     </div>
                 `;
             } else {
-                // --- TAMPILAN ROSTER GRID BARU (KEMBALI MENGGUNAKAN TABLE CLASSIC + AUTO WIDTH) ---
+                // --- TAMPILAN ROSTER GRID BARU ---
                 
                 const generateRegularGrid = (modsArray) => {
                     let mapsInGroup = [];
@@ -722,7 +683,7 @@
 
                     let theadRows = '<tr>';
                     let tcol1Rows = '<tr>';
-                    let bodyRows = ['', '', '', '', '']; // Kita pakai 5 baris di dalam tbody saja untuk menyatukan TB total
+                    let bodyRows = ['', '', '', '', '']; 
                     
                     const hrColor = getMapColor('HR');
                     const hdColor = getMapColor('HD');
@@ -855,8 +816,8 @@
                 
                 viewHTML = `
                     <div class="w-full overflow-x-auto pb-4 pt-1">
-                        <div id="export-container" class="w-fit min-w-full bg-[#0f172a] rounded-xl relative pt-6 pb-2 px-6 mx-auto flex flex-col items-center">
-                            <h2 id="export-static-title" class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center hidden">${stageTitle}</h2>
+                        <div class="w-fit min-w-full rounded-xl relative pt-6 pb-2 mx-auto flex flex-col items-center">
+                            <h2 class="text-3xl font-bold text-white mb-6 uppercase tracking-tight text-center">${stageTitle}</h2>
                             ${rosterHTML}
                         </div>
                     </div>
@@ -880,11 +841,6 @@
                         </div>
 
                         <div class="flex-1 flex justify-center sm:justify-end w-full sm:w-auto">
-                            ${!isQualifier ? `
-                            <button id="export-button" onclick="window.toggleCaptureMode(true)" class="bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:shadow-brand-500/30 transition duration-200 text-sm flex items-center">
-                                <i class="fa-solid fa-camera mr-2"></i> Capture Roster
-                            </button>
-                            ` : ''}
                         </div>
                     </div>
                     ${viewHTML}
@@ -1096,8 +1052,8 @@
                                 </h3>
                             </div>
                             <div class="p-4 border-b border-slate-700">
-                                <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value);" class="flex gap-2 w-full">
-                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-emerald-500 flex-1 min-w-0 text-sm">
+                                <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value);" class="flex gap-2 w-fit">
+                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 w-[140px] flex-shrink-0 text-sm">
                                         <option value="Qualifier" ${state.adminStage === 'Qualifier' ? 'selected' : ''}>Qualifier</option>
                                         <option value="RO32" ${state.adminStage === 'RO32' ? 'selected' : ''}>RO32</option>
                                         <option value="RO16" ${state.adminStage === 'RO16' ? 'selected' : ''}>RO16</option>
@@ -1105,7 +1061,7 @@
                                         <option value="Final" ${state.adminStage === 'Final' ? 'selected' : ''}>Final</option>
                                         <option value="Grand Final" ${state.adminStage === 'Grand Final' ? 'selected' : ''}>Grand Final</option>
                                     </select>
-                                    <select name="mapMod" required onchange="window.changeAdminMod(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-emerald-500 flex-1 min-w-0 text-center text-sm">
+                                    <select name="mapMod" required onchange="window.changeAdminMod(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:border-emerald-500 w-[80px] flex-shrink-0 text-center text-sm">
                                         <option value="NM" ${state.adminMod === 'NM' ? 'selected' : ''}>NM</option>
                                         <option value="HD" ${state.adminMod === 'HD' ? 'selected' : ''}>HD</option>
                                         <option value="HR" ${state.adminMod === 'HR' ? 'selected' : ''}>HR</option>
