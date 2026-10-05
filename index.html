@@ -85,7 +85,8 @@
         const state = {
             currentUser: null,
             view: 'login', // 'login', 'leaderboard', 'submit', 'admin'
-            currentStage: 'Qualifier', // State baru untuk tracking dropdown Stage
+            currentStage: 'Qualifier', // State untuk tracking dropdown Stage (Leaderboard & Submit)
+            adminStage: 'Qualifier', // State untuk tracking dropdown Stage di Admin Panel
             players: [],
             beatmaps: [],
             scores: [] 
@@ -114,9 +115,13 @@
             }, 3000);
         }
 
-        // FUNGSI BARU: Mengubah Stage yang sedang dilihat
         window.changeStage = function(stage) {
             state.currentStage = stage;
+            renderApp();
+        }
+
+        window.changeAdminStage = function(stage) {
+            state.adminStage = stage;
             renderApp();
         }
 
@@ -199,7 +204,6 @@
             showToast('Player berhasil dihapus!', 'success');
         }
 
-        // UPDATE: Menambahkan parameter stage
         window.addBeatmap = async function(stage, mod, name) {
             if (!name.trim()) return showToast('Nama beatmap tidak boleh kosong!', 'error');
             if(API_URL) {
@@ -289,7 +293,6 @@
         }
 
         // --- DATA PROCESSING ---
-        // UPDATE: Hanya memproses map dari stage yang dipilih
         function getLeaderboardData(currentStageMaps) {
             const playerList = state.players.filter(p => p.role === 'player');
             const mapStats = {}; 
@@ -436,7 +439,6 @@
         }
 
         function renderLeaderboard() {
-            // Filter map sesuai stage yang sedang dipilih
             const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === state.currentStage);
             const data = getLeaderboardData(currentStageMaps);
             
@@ -540,7 +542,6 @@
         }
 
         function renderSubmitScore() {
-            // Filter map sesuai stage yang sedang dipilih
             const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === state.currentStage);
             const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
             let tableRows = '';
@@ -605,7 +606,6 @@
                 });
             });
 
-            // Tampilkan pesan kosong jika stage tersebut belum punya map
             if (tableRows === '') {
                 tableRows = `<tr><td colspan="2" class="px-6 py-8 text-center text-slate-500">Belum ada map terdaftar di stage ini.</td></tr>`;
             }
@@ -662,8 +662,10 @@
             `).join('');
             if (players.length === 0) playerRows = `<tr><td colspan="2" class="px-4 py-6 text-center text-slate-500">Tidak ada player terdaftar.</td></tr>`;
 
-            // UPDATE: Menambahkan lencana Stage (badge) di daftar map
-            let beatmapRows = state.beatmaps.map(b => {
+            const currentAdminStage = state.adminStage || 'Qualifier';
+            const filteredBeatmaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === currentAdminStage);
+
+            let beatmapRows = filteredBeatmaps.map(b => {
                 let badgeColor = 'bg-slate-600 text-white';
                 if(b.mod === 'NM') badgeColor = 'bg-emerald-400 text-emerald-950';
                 if(b.mod === 'HD') badgeColor = 'bg-amber-500 text-amber-950';
@@ -687,7 +689,7 @@
                 </tr>
                 `;
             }).join('');
-            if (state.beatmaps.length === 0) beatmapRows = `<tr><td colspan="2" class="px-4 py-6 text-center text-slate-500">Tidak ada beatmap terdaftar.</td></tr>`;
+            if (filteredBeatmaps.length === 0) beatmapRows = `<tr><td colspan="2" class="px-4 py-6 text-center text-slate-500">Tidak ada beatmap terdaftar di stage ini.</td></tr>`;
 
             return `
                 <div class="fade-in w-full">
@@ -723,15 +725,14 @@
                                 </h3>
                             </div>
                             <div class="p-4 border-b border-slate-700">
-                                <!-- UPDATE: Menambahkan dropdown Stage -->
                                 <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value, this.mapName.value); this.reset();" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                                    <select name="mapStage" required class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-32">
-                                        <option value="Qualifier">Qualifier</option>
-                                        <option value="RO32">RO32</option>
-                                        <option value="RO16">RO16</option>
-                                        <option value="Semi Final">Semi Final</option>
-                                        <option value="Final">Final</option>
-                                        <option value="Grand Final">Grand Final</option>
+                                    <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-32">
+                                        <option value="Qualifier" ${currentAdminStage === 'Qualifier' ? 'selected' : ''}>Qualifier</option>
+                                        <option value="RO32" ${currentAdminStage === 'RO32' ? 'selected' : ''}>RO32</option>
+                                        <option value="RO16" ${currentAdminStage === 'RO16' ? 'selected' : ''}>RO16</option>
+                                        <option value="Semi Final" ${currentAdminStage === 'Semi Final' ? 'selected' : ''}>Semi Final</option>
+                                        <option value="Final" ${currentAdminStage === 'Final' ? 'selected' : ''}>Final</option>
+                                        <option value="Grand Final" ${currentAdminStage === 'Grand Final' ? 'selected' : ''}>Grand Final</option>
                                     </select>
                                     <select name="mapMod" required class="bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 w-full sm:w-24">
                                         <option value="NM">NM</option>
@@ -788,6 +789,7 @@
             if (!API_URL) {
                 state.players = [
                     { id: 'admin1', username: 'admin', password: 'admin', role: 'admin' },
+
                 ];
                 const initialMaps = [
                     { id: 'nm1', stage: 'Qualifier', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier', mod: 'NM', name: 'NM4' },
