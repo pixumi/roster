@@ -203,6 +203,50 @@
             renderApp();
         }
 
+        window.showSuggestions = function(val) {
+            const list = document.getElementById('username-suggestions');
+            list.innerHTML = ''; // Bersihkan list sebelumnya
+            
+            if (!val || val.trim() === '') {
+                list.classList.add('hidden');
+                return;
+            }
+
+            // Filter player: kecualikan admin, dan cari nama yang mengandung huruf ketikan
+            const matches = state.players.filter(p => 
+                p.role !== 'admin' && p.username.toLowerCase().includes(val.toLowerCase())
+            );
+            
+            if (matches.length > 0) {
+                matches.forEach(match => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-2.5 hover:bg-brand-600 cursor-pointer text-white text-sm transition';
+                    li.textContent = match.username;
+                    // Jika di-klik, masukkan nama ke inputan
+                    li.onclick = () => window.selectSuggestion(match.username);
+                    list.appendChild(li);
+                });
+                list.classList.remove('hidden');
+            } else {
+                list.classList.add('hidden');
+            }
+        };
+
+        window.selectSuggestion = function(username) {
+            const input = document.getElementById('login-username');
+            input.value = username;
+            document.getElementById('username-suggestions').classList.add('hidden');
+        };
+
+        // Menutup dropdown jika user klik di luar area login
+        window.addEventListener('click', function(e) {
+            const list = document.getElementById('username-suggestions');
+            const input = document.getElementById('login-username');
+            if (list && input && e.target !== input && e.target !== list) {
+                list.classList.add('hidden');
+            }
+        });
+
         window.addPlayer = async function(username, password) {
             if (state.players.some(p => p.username === username)) {
                 showToast('Username sudah digunakan!', 'error'); return;
