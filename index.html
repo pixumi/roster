@@ -99,11 +99,6 @@
         <!-- Content will be injected here by JavaScript -->
     </div>
 
-    <!-- Footer  
-    <footer class="py-6 text-center text-slate-500 text-sm mt-auto">
-         <p>&copy; 2026 Tournament Roster. Powered by HTML, CSS, & JS.</p>
-    </footer> -->
-
     <script>
         // --- KONFIGURASI CLOUDFLARE WORKER API ---
         const API_URL = "https://roster-api.team-id.workers.dev";
@@ -226,7 +221,6 @@
             showToast('Player berhasil ditambahkan!', 'success');
         }
 
-        // FITUR EDIT USERNAME BARU
         window.editPlayer = async function(playerId, oldUsername) {
             const newUsername = prompt("Masukkan username baru:", oldUsername);
             
@@ -239,16 +233,21 @@
 
             if(API_URL) {
                 try {
-                    await fetch(`${API_URL}/players`, { 
+                    const response = await fetch(`${API_URL}/players`, { 
                         method: 'PUT', 
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ id: playerId, username: newUsername }) 
                     });
+                    
+                    if (!response.ok) {
+                        throw new Error("Server API Worker menolak request PUT.");
+                    }
+                    
                     await fetchDatabase();
                     showToast('Username berhasil diubah!', 'success');
                 } catch(e) {
                     console.error("Gagal edit username:", e);
-                    showToast('Gagal mengubah username.', 'error');
+                    showToast('Gagal mengubah username. Pastikan API Worker mendukung metode PUT.', 'error');
                 }
             } else {
                 const pIndex = state.players.findIndex(p => p.id === playerId);
@@ -1031,7 +1030,7 @@
                             <i class="fa-solid fa-pen"></i>
                         </button>
                         <button onclick="window.removePlayer('${p.id}')" class="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1 rounded transition text-sm">
-                            <i class="fa-solid fa-trash mr-1"></i> Hapus
+                            <i class="fa-solid fa-trash mr-1"></i>
                         </button>
                     </td>
                 </tr>
@@ -1164,6 +1163,7 @@
             if (!API_URL) {
                 state.players = [
                     { id: 'admin1', username: 'admin', password: 'admin', role: 'admin' },
+                    { id: 'p1', username: 'faker', password: '123', role: 'player' }
                 ];
                 const initialMaps = [
                     { id: 'nm1', stage: 'Qualifier', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier', mod: 'NM', name: 'NM4' },
