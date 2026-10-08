@@ -539,7 +539,10 @@
                                 <label class="block text-sm font-medium text-slate-300 mb-1">Username</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-user"></i></div>
-                                    <input type="text" name="username" required class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-10 pr-4 py-2.5 sm:py-3 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="Masukkan username">
+                                    <!-- Menambahkan ID, Autocomplete Off, dan event oninput -->
+                                    <input type="text" id="login-username" name="username" required autocomplete="off" oninput="window.showSuggestions(this.value)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-10 pr-4 py-2.5 sm:py-3 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" placeholder="Masukkan username">
+                                    <!-- Kontainer Dropdown Autocomplete -->
+                                    <ul id="username-suggestions" class="absolute z-50 w-full bg-slate-800 border border-slate-600 rounded-lg mt-1 hidden max-h-40 overflow-y-auto shadow-xl divide-y divide-slate-700"></ul>
                                 </div>
                             </div>
                             <div>
