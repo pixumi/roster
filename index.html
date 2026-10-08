@@ -99,7 +99,7 @@
         <!-- Content will be injected here by JavaScript -->
     </div>
 
-    <!-- Footer 
+    <!-- Footer  
     <footer class="py-6 text-center text-slate-500 text-sm mt-auto">
          <p>&copy; 2026 Tournament Roster. Powered by HTML, CSS, & JS.</p>
     </footer> -->
@@ -224,6 +224,40 @@
                 renderApp();
             }
             showToast('Player berhasil ditambahkan!', 'success');
+        }
+
+        // FITUR EDIT USERNAME BARU
+        window.editPlayer = async function(playerId, oldUsername) {
+            const newUsername = prompt("Masukkan username baru:", oldUsername);
+            
+            if (!newUsername || newUsername.trim() === '' || newUsername === oldUsername) return;
+            
+            if (state.players.some(p => p.username === newUsername && p.id !== playerId)) {
+                showToast('Username sudah digunakan!', 'error'); 
+                return;
+            }
+
+            if(API_URL) {
+                try {
+                    await fetch(`${API_URL}/players`, { 
+                        method: 'PUT', 
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: playerId, username: newUsername }) 
+                    });
+                    await fetchDatabase();
+                    showToast('Username berhasil diubah!', 'success');
+                } catch(e) {
+                    console.error("Gagal edit username:", e);
+                    showToast('Gagal mengubah username.', 'error');
+                }
+            } else {
+                const pIndex = state.players.findIndex(p => p.id === playerId);
+                if (pIndex !== -1) {
+                    state.players[pIndex].username = newUsername;
+                    renderApp();
+                    showToast('Username berhasil diubah!', 'success');
+                }
+            }
         }
 
         window.removePlayer = async function(playerId) {
@@ -499,6 +533,7 @@
                             <i class="fa-solid fa-gamepad text-4xl sm:text-5xl text-brand-500 mb-3"></i>
                             <h2 class="text-2xl sm:text-3xl font-bold">Roster Generator</h2>
                                 <br>
+                                <br>
 
                         <form onsubmit="event.preventDefault(); window.login(this.username.value, this.password.value);" class="space-y-4 sm:space-y-5">
                             <div>
@@ -516,7 +551,7 @@
                                 </div>
                             </div>
                             <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2.5 sm:py-3 px-4 rounded-lg shadow-lg hover:shadow-brand-500/30 transition duration-200">
-                                Login
+                                Login Sekarang
                             </button>
                         </form>
                     </div>
@@ -992,8 +1027,11 @@
                 <tr class="border-b border-slate-700 hover:bg-slate-700/50 transition">
                     <td class="px-4 py-3 whitespace-nowrap font-medium text-white">${p.username}</td>
                     <td class="px-4 py-3 whitespace-nowrap text-right">
+                        <button onclick="window.editPlayer('${p.id}', '${p.username}')" class="text-blue-400 hover:text-blue-300 bg-blue-400/10 hover:bg-blue-400/20 px-3 py-1 rounded transition text-sm mr-2" title="Edit Username">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
                         <button onclick="window.removePlayer('${p.id}')" class="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1 rounded transition text-sm">
-                            <i class="fa-solid fa-trash mr-1"></i>
+                            <i class="fa-solid fa-trash mr-1"></i> Hapus
                         </button>
                     </td>
                 </tr>
@@ -1125,7 +1163,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             if (!API_URL) {
                 state.players = [
-                    { id: 'admin1', username: 'admin', password: 'hk123', role: 'admin' },
+                    { id: 'admin1', username: 'admin', password: 'admin', role: 'admin' },
                 ];
                 const initialMaps = [
                     { id: 'nm1', stage: 'Qualifier', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier', mod: 'NM', name: 'NM4' },
