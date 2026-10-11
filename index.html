@@ -906,8 +906,148 @@
                 const row2 = generateRegularGrid(['HD', 'HR']); 
                 const row3 = generateMMAndTBGrid(); 
 
-                let rosterHTML = row1 + row2 + row3;
+                // --- TABEL SUMMARY & PICK ORDER ---
+                const generateSummaryAndPickOrder = () => {
+                    const playerSummary = {};
+                    const playerList = state.players.filter(p => p.role === 'player');
+                    playerList.forEach(p => {
+                        playerSummary[p.id] = { name: p.username, main: 0, backup: 0 };
+                    });
 
+                    const mapTotals = [];
+
+                    currentStageMaps.forEach(map => {
+                        let mapTotalScore = 0;
+
+                        if (map.mod === 'MM') {
+                            const subMods = ['HR', 'HD', 'NM'];
+                            subMods.forEach(subMod => {
+                                const stats = data.mapStats[`${map.id}_${subMod}`] || [];
+                                const top3 = stats.slice(0, 3);
+                                const backup = stats[3];
+                                
+                                top3.forEach(p => { if (p && playerSummary[p.playerId]) playerSummary[p.playerId].main++; });
+                                if (backup && playerSummary[backup.playerId]) playerSummary[backup.playerId].backup++;
+
+                                mapTotalScore += top3.reduce((sum, p) => sum + (p ? p.average : 0), 0);
+                            });
+                        } else {
+                            const stats = data.mapStats[map.id] || [];
+                            const top3 = stats.slice(0, 3);
+                            const backup = stats[3];
+
+                            top3.forEach(p => { if (p && playerSummary[p.playerId]) playerSummary[p.playerId].main++; });
+                            if (backup && playerSummary[backup.playerId]) playerSummary[backup.playerId].backup++;
+
+                            mapTotalScore += top3.reduce((sum, p) => sum + (p ? p.average : 0), 0);
+                        }
+
+                        mapTotals.push({ name: map.name, mod: map.mod, score: mapTotalScore });
+                    });
+
+                    // Sorting map dari total skor tertinggi
+                    mapTotals.sort((a, b) => b.score - a.score);
+
+                    // Sorting player sesuai abjad
+                    const sortedPlayers = Object.values(playerSummary).sort((a, b) => a.name.localeCompare(b.name));
+                    const maxMain = Math.max(...sortedPlayers.map(p => p.main), 1);
+                    const maxBackup = Math.max(...sortedPlayers.map(p => p.backup), 1);
+
+                    // Kalkulasi gradasi warna Heatmap untuk Summary
+                    const getHeatmapColor = (val, max) => {
+                        if (val === 0) return 'bg-white';
+                        const intensity = val / max; 
+                        if (intensity >= 0.8) return 'bg-[#71b358]'; 
+                        if (intensity >= 0.5) return 'bg-[#a9d18e]'; 
+                        if (intensity >= 0.2) return 'bg-[#cbe6bf]'; 
+                        return 'bg-white';
+                    };
+
+                    let summaryRows = '';
+                    sortedPlayers.forEach(p => {
+                        summaryRows += `
+                            <tr>
+                                <td class="border-r border-b border-black px-4 py-1.5 text-black text-sm text-center bg-white font-medium">${p.name}</td>
+                                <td class="border-r border-b border-black px-4 py-1.5 text-black text-sm text-center font-bold font-sans ${getHeatmapColor(p.main, maxMain)}">${p.main}</td>
+                                <td class="border-b border-black px-4 py-1.5 text-black text-sm text-center font-bold font-sans ${getHeatmapColor(p.backup, maxBackup)}">${p.backup}</td>
+                            </tr>
+                        `;
+                    });
+
+                    const summaryTable = `
+                        <table class="border-collapse border-[4px] border-black bg-white shadow-2xl min-w-[250px] h-fit mx-auto lg:mx-0">
+                            <thead>
+                                <tr><th colspan="3" class="bg-[#d9d9d9] text-black font-bold text-center border-b border-black py-1.5 text-sm tracking-wider">Summary</th></tr>
+                                <tr class="bg-[#f2f2f2]">
+                                    <th class="border-r border-b border-black px-4 py-1.5 text-black font-bold text-sm">Player</th>
+                                    <th class="border-r border-b border-black px-4 py-1.5 text-black font-bold text-sm">Main</th>
+                                    <th class="border-b border-black px-4 py-1.5 text-black font-bold text-sm">Backup</th>
+                                </tr>
+                            </thead>
+                            <tbody>${summaryRows}</tbody>
+                        </table>
+                    `;
+
+                    let pickOrderRows = '';
+                    const totalM = mapTotals.length;
+                    const colSize = Math.ceil(totalM / 3);
+                    
+                    for (let i = 0; i < colSize; i++) {
+                        const map1 = mapTotals[i];
+                        const map2 = mapTotals[i + colSize];
+                        const map3 = mapTotals[i + colSize * 2];
+
+                        const renderMapCell = (m, rank, isLastCol) => {
+                            const rightBorder = isLastCol ? '' : 'border-r';
+                            if (!m) return `<td class="${rightBorder} border-b border-black px-2 py-1.5 bg-white"></td><td class="${rightBorder} border-b border-black px-2 py-1.5 bg-white"></td>`;
+                            
+                            const cellColor = getMapColor(m.mod);
+                            const subCellColor = getSubColor(m.mod);
+
+                            return `
+                                <td class="${cellColor} border-r border-b border-black px-2 py-1.5 text-black font-bold font-sans text-center text-sm w-[40px]">${rank}</td>
+                                <td class="${subCellColor} ${rightBorder} border-b border-black px-4 py-1.5 text-black font-medium text-center text-sm w-[90px]">${m.name}</td>
+                            `;
+                        };
+
+                        pickOrderRows += `
+                            <tr>
+                                ${renderMapCell(map1, i + 1, false)}
+                                ${renderMapCell(map2, map2 ? i + 1 + colSize : '', false)}
+                                ${renderMapCell(map3, map3 ? i + 1 + colSize * 2 : '', true)}
+                            </tr>
+                        `;
+                    }
+
+                    const pickOrderTable = `
+                        <table class="border-collapse border-[4px] border-black bg-white shadow-2xl h-fit mx-auto lg:mx-0">
+                            <thead>
+                                <tr><th colspan="6" class="bg-[#d9d9d9] text-black font-bold text-center border-b border-black py-1.5 text-sm tracking-wider">Pick Order (by Score)</th></tr>
+                                <tr>
+                                    <th colspan="2" class="bg-[#b4c6e7] border-r border-b border-black py-2 px-6 text-black font-medium text-sm leading-tight text-center">Prioritas</th>
+                                    <th colspan="2" class="bg-[#e2efda] border-r border-b border-black py-2 px-6 text-black font-medium text-sm leading-tight text-center">Kalo Ga Ada<br>Pilihan Lain</th>
+                                    <th colspan="2" class="bg-[#f4cccc] border-b border-black py-2 px-6 text-black font-medium text-sm leading-tight text-center">Ban / Males</th>
+                                </tr>
+                            </thead>
+                            <tbody>${pickOrderRows}</tbody>
+                        </table>
+                    `;
+
+                    if (currentStageMaps.length === 0) return '';
+
+                    return `
+                        <div class="w-full text-center mt-6">
+                            <div class="inline-flex flex-col lg:flex-row justify-center items-start gap-8 max-w-full align-top">
+                                ${summaryTable}
+                                ${pickOrderTable}
+                            </div>
+                        </div>
+                    `;
+                };
+
+                const row4 = generateSummaryAndPickOrder();
+
+                let rosterHTML = row1 + row2 + row3 + row4;
                 if (currentStageMaps.length === 0) {
                     rosterHTML = `<div class="bg-slate-800 p-8 text-center text-slate-500 rounded-xl border border-slate-700">Belum ada map terdaftar di stage ini.</div>`;
                 }
