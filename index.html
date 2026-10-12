@@ -955,10 +955,12 @@
 
                     // Sorting player sesuai abjad
                     const sortedPlayers = Object.values(playerSummary).sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-                    const maxMain = Math.max(...sortedPlayers.map(p => p.main), 1);
-                    const maxBackup = Math.max(...sortedPlayers.map(p => p.backup), 1);
+                    
+                    // MENGGABUNGKAN perhitungan nilai maksimum dari seluruh angka Main dan Backup
+                    const allValues = sortedPlayers.flatMap(p => [p.main, p.backup]);
+                    const maxOverall = Math.max(...allValues, 1);
 
-                    // Kalkulasi warna Heatmap Summary (Putih ke Hijau)
+                    // Kalkulasi warna Heatmap Summary berdasarkan nilai maksimum gabungan
                     const getSummaryColor = (val, max) => {
                         if (val === 0 || max === 0) return 'background-color: rgb(255, 255, 255);';
                         const ratio = val / max;
@@ -974,8 +976,9 @@
                         summaryRows += `
                             <tr>
                                 <td class="border-[2px] border-black px-4 py-1 text-black text-sm text-center bg-[#f2f2f2] font-medium">${p.name}</td>
-                                <td class="border-[2px] border-black px-4 py-1 text-black text-sm text-center font-bold font-sans" style="${getSummaryColor(p.main, maxMain)}">${p.main}</td>
-                                <td class="border-[2px] border-black px-4 py-1 text-black text-sm text-center font-bold font-sans" style="${getSummaryColor(p.backup, maxBackup)}">${p.backup}</td>
+                                <!-- Keduanya sekarang menggunakan maxOverall sebagai acuan -->
+                                <td class="border-[2px] border-black px-4 py-1 text-black text-sm text-center font-bold font-sans" style="${getSummaryColor(p.main, maxOverall)}">${p.main}</td>
+                                <td class="border-[2px] border-black px-4 py-1 text-black text-sm text-center font-bold font-sans" style="${getSummaryColor(p.backup, maxOverall)}">${p.backup}</td>
                             </tr>
                         `;
                     });
