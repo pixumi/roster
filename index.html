@@ -502,14 +502,496 @@
         }
 
         // --- CSS GRID ROSTER HELPERS ---
-        function getMapColor(mod) {
-            if(mod === 'NM') return 'bg-[#a9d18e]'; 
-            if(mod === 'HD') return 'bg-[#ffd966]'; 
-            if(mod === 'HR') return 'bg-[#ea9999]'; 
-            if(mod === 'DT') return 'bg-[#9bc2e6]'; 
-            if(mod === 'MM') return 'bg-[#c2c2f0]';
-            if(mod === 'TB') return 'bg-[#d9d9d9]';
-            return 'bg-slate-300';
+        function renderLeaderboard() {
+            const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier') === state.currentStage);
+            const data = getLeaderboardData(currentStageMaps);
+            const isQualifier = state.currentStage === 'Qualifier';
+
+            let viewHTML = '';
+
+            if (isQualifier) {
+                // --- TAMPILAN QUALIFIER ---
+                let mapHeaders = '';
+                currentStageMaps.forEach(map => {
+                    if (map.mod === 'MM') {
+                        mapHeaders += `
+                            <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} NM</th>
+                            <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} HD</th>
+                            <th class="px-4 py-3 text-xs font-bold text-white bg-purple-500 uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name} HR</th>
+                        `;
+                    } else {
+                        let bgColor = 'bg-slate-700'; let textColor = 'text-white';
+                        if(map.mod === 'NM') { bgColor = 'bg-emerald-400'; textColor = 'text-emerald-950'; }
+                        if(map.mod === 'HD') { bgColor = 'bg-amber-500'; textColor = 'text-amber-950'; }
+                        if(map.mod === 'HR') { bgColor = 'bg-red-500'; textColor = 'text-white'; }
+                        if(map.mod === 'DT') { bgColor = 'bg-sky-400'; textColor = 'text-sky-950'; }
+                        if(map.mod === 'TB') { bgColor = 'bg-slate-400'; textColor = 'text-slate-900'; }
+                        
+                        mapHeaders += `<th class="px-4 py-3 text-sm font-extrabold ${textColor} ${bgColor} uppercase tracking-wider text-center border-l border-slate-800 min-w-[120px] shadow-inner">${map.name}</th>`;
+                    }
+                });
+
+                let rows = data.rankings.map((player, index) => {
+                    let mapCells = '';
+                    currentStageMaps.forEach(map => {
+                        const subMods = map.mod === 'MM' ? ['NM', 'HD', 'HR'] : [null];
+                        subMods.forEach(subMod => {
+                            const mapKey = subMod ? `${map.id}_${subMod}` : map.id;
+                            const avg = player.mapAverages[mapKey];
+                            const rank = player.mapRanks[mapKey];
+                            
+                            let cellClass = "px-3 py-2 whitespace-nowrap font-sans font-bold text-sm border-l border-slate-700/50 hover:bg-slate-700/80 transition align-middle";
+                            
+                            if (avg !== null) {
+                                let rankColor = 'text-slate-500'; let scoreColor = 'text-slate-300';
+                                
+                                if (rank === 1) { rankColor = 'text-yellow-400 font-bold'; scoreColor = 'text-yellow-400 font-bold'; } 
+                                else if (rank === 2) { rankColor = 'text-slate-300 font-bold'; scoreColor = 'text-slate-100 font-bold'; } 
+                                else if (rank === 3) { rankColor = 'text-amber-600 font-bold'; scoreColor = 'text-amber-500 font-bold'; }
+                                
+                                mapCells += `<td class="${cellClass}">
+                                    <div class="flex justify-between items-center w-full gap-2">
+                                        <span class="text-xs ${rankColor} w-6 text-left">#${rank}</span>
+                                        <span class="${scoreColor} flex-1 text-right font-sans font-bold">${avg.toLocaleString('en-US')}</span>
+                                    </div>
+                                </td>`;
+                            } else {
+                                mapCells += `<td class="${cellClass} text-center text-slate-600 font-medium">-</td>`;
+                            }
+                        });
+                    });
+
+                    return `
+                        <tr class="bg-slate-800 border-b border-slate-700/50 hover:bg-slate-750 transition">
+                            <td class="px-4 py-2 whitespace-nowrap text-sm font-bold text-slate-300 w-12 text-center sticky left-0 bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] align-middle">#${index + 1}</td>
+                            <td class="px-4 py-2 whitespace-nowrap font-bold text-white text-base sticky left-[48px] bg-slate-800 z-10 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] align-middle">${player.username}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-white bg-slate-900/40 align-middle">${player.avgRank === 999 ? '-' : player.avgRank.toFixed(2)}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-center font-bold text-slate-300 bg-slate-900/40 font-sans align-middle">${player.avgScore.toLocaleString('en-US')}</td>
+                            ${mapCells}
+                        </tr>
+                    `;
+                }).join('');
+
+                if (data.rankings.length === 0) rows = `<tr><td colspan="100%" class="px-6 py-8 text-center text-slate-500">Belum ada data pemain.</td></tr>`;
+
+                viewHTML = `
+                    <div class="w-full overflow-x-auto pb-4">
+                        <div class="min-w-fit rounded-xl relative pt-4 pb-2 mx-auto">
+                            <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden w-full relative">
+                                <div class="overflow-x-auto custom-scrollbar pb-2">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead class="bg-slate-900">
+                                            <tr>
+                                                <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center sticky left-0 bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] align-middle">#</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider sticky left-[48px] bg-slate-900 z-20 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] min-w-[150px] align-middle">Player</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-white bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap align-middle">Avg. <i class="fa-solid fa-sort-down align-top ml-1 text-brand-400"></i></th>
+                                                <th class="px-4 py-4 text-xs font-bold text-slate-300 bg-slate-800 uppercase tracking-wider text-center whitespace-nowrap border-r border-slate-700 align-middle">Avg. Score</th>
+                                                ${mapHeaders}
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-700">
+                                            ${rows}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // --- TAMPILAN ROSTER GRID BARU ---
+                
+                const generateRegularGrid = (modsArray) => {
+                    let mapsInGroup = [];
+                    modsArray.forEach(m => {
+                        mapsInGroup = mapsInGroup.concat(currentStageMaps.filter(b => b.mod === m));
+                    });
+                    
+                    if (mapsInGroup.length === 0) return '';
+
+                    let theadRows = '<tr>';
+                    let tcol1Rows = '<tr>';
+                    let bodyRows = ['', '', '', ''];
+                    let footRow = '<tr class="bg-white text-black">';
+
+                    mapsInGroup.forEach(map => {
+                        let bgColor = getMapColor(map.mod);
+
+                        theadRows += `<th colspan="2" class="${bgColor} text-black font-bold border-[2px] border-black p-0 tracking-widest"><div class="cell-center text-sm">${map.name}</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-[2px] border-black p-0 w-[120px]"><div class="cell-center text-xs">Player</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-[2px] border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
+
+                        const stats = data.mapStats[map.id] || [];
+                        const top3 = stats.slice(0, 3);
+                        const backup = stats[3];
+                        const total = top3.reduce((sum, p) => sum + p.average, 0);
+
+                        for(let i=0; i<3; i++) {
+                            const p = top3[i];
+                            let cellBg = (i % 2 === 0) ? bgColor : bgColor.replace(']', ']/80'); 
+                            
+                            if (p) {
+                                const pObj = state.players.find(pl => pl.id === p.playerId);
+                                bodyRows[i] += `<td class="${cellBg} text-black border-[2px] border-black p-0 w-[120px]"><div class="cell-left font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-[2px] border-black p-0 w-[80px]"><div class="cell-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</div></td>`;
+                            } else {
+                                bodyRows[i] += `<td class="${cellBg} text-black border-[2px] border-black p-0"><div class="cell-left px-2">-</div></td><td class="${cellBg} text-black border-[2px] border-black p-0"><div class="cell-right font-sans">-</div></td>`;
+                            }
+                        }
+
+                        let subBg = getSubColor(map.mod);
+
+                        if (backup) {
+                            const pObj = state.players.find(pl => pl.id === backup.playerId);
+                            bodyRows[3] += `<td class="${subBg} text-black border-[2px] border-black p-0 w-[120px]"><div class="cell-left text-sm font-normal truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-[2px] border-black p-0 w-[80px]"><div class="cell-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</div></td>`;
+                        } else {
+                            bodyRows[3] += `<td class="${subBg} text-black border-[2px] border-black p-0"><div class="cell-left font-normal px-2">-</div></td><td class="${subBg} text-black border-[2px] border-black p-0"><div class="cell-right font-sans font-normal px-2">-</div></td>`;
+                        }
+
+                        footRow += `<td colspan="2" class="${bgColor} text-black border-[2px] border-black p-0"><div class="cell-center font-bold font-sans text-[13px]">${total.toLocaleString('en-US')}</div></td>`;
+                    });
+
+                    theadRows += '</tr>';
+                    tcol1Rows += '</tr>';
+                    footRow += '</tr>';
+                    let combinedBody = bodyRows.map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
+
+                    return `
+                        <div class="w-full text-center mb-6">
+                            <div class="inline-block overflow-x-auto max-w-full align-top">
+                                <table class="border-collapse border-[4px] border-black bg-white shadow-2xl mx-auto">
+                                    <thead>${theadRows}${tcol1Rows}</thead>
+                                    <tbody>${combinedBody}</tbody>
+                                    <tfoot>${footRow}</tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const generateMMAndTBGrid = () => {
+                    const mmMaps = currentStageMaps.filter(b => b.mod === 'MM');
+                    const tbMaps = currentStageMaps.filter(b => b.mod === 'TB');
+                    
+                    if (mmMaps.length === 0 && tbMaps.length === 0) return '';
+
+                    let theadRows = '<tr>';
+                    let tcol1Rows = '<tr>';
+                    let bodyRows = ['', '', '', '', '']; 
+                    
+                    const hrColor = getMapColor('HR');
+                    const hdColor = getMapColor('HD');
+                    const nmColor = getMapColor('NM');
+                    const backupColorHR = getSubColor('HR');
+                    const backupColorHD = getSubColor('HD');
+                    const backupColorNM = getSubColor('NM');
+
+                    mmMaps.forEach(map => {
+                        let bgColor = getMapColor('MM');
+
+                        theadRows += `<th colspan="4" class="${bgColor} text-black font-bold border-[2px] border-black p-0 tracking-widest"><div class="cell-center text-sm">${map.name}</div></th>`;
+                        
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-[2px] border-black p-0 w-[120px]"><div class="cell-center text-xs">Player</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-[2px] border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-[2px] border-black p-0 w-[100px]"><div class="cell-center text-xs">Backup</div></th>`;
+                        tcol1Rows += `<th class="${bgColor} text-black font-bold border-[2px] border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
+
+                        const statsHR = data.mapStats[`${map.id}_HR`] || [];
+                        const statsHD = data.mapStats[`${map.id}_HD`] || [];
+                        const statsNM = data.mapStats[`${map.id}_NM`] || [];
+
+                        const rowsData = [
+                            { stats: statsHR, mainColor: hrColor, backColor: backupColorHR },
+                            { stats: statsHD, mainColor: hdColor, backColor: backupColorHD },
+                            { stats: statsNM, mainColor: nmColor, backColor: backupColorNM }
+                        ];
+
+                        let totalMapMain = 0;
+                        let totalMapBackup = 0;
+
+                        for(let i=0; i<3; i++) {
+                            const { stats, mainColor, backColor } = rowsData[i];
+                            const mainP = stats[0];
+                            const backupP = stats[1]; 
+
+                            if(mainP) totalMapMain += mainP.average;
+                            if(backupP) totalMapBackup += backupP.average;
+
+                            if (mainP) {
+                                const pObj = state.players.find(pl => pl.id === mainP.playerId);
+                                bodyRows[i] += `<td class="${mainColor} text-black border-[2px] border-black p-0 w-[120px]"><div class="cell-left font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${mainColor} text-black border-[2px] border-black p-0 w-[80px]"><div class="cell-right font-sans font-bold text-sm">${mainP.average.toLocaleString('en-US')}</div></td>`;
+                            } else {
+                                bodyRows[i] += `<td class="${mainColor} text-black border-[2px] border-black p-0"><div class="cell-left px-2">-</div></td><td class="${mainColor} text-black border-[2px] border-black p-0"><div class="cell-right font-sans px-2">-</div></td>`;
+                            }
+
+                            if (backupP) {
+                                const pObj = state.players.find(pl => pl.id === backupP.playerId);
+                                bodyRows[i] += `<td class="${backColor} text-black border-[2px] border-black p-0 w-[100px]"><div class="cell-left text-sm font-normal truncate w-[100px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${backColor} text-black border-[2px] border-black p-0 w-[80px]"><div class="cell-right font-sans text-sm font-normal">${backupP.average.toLocaleString('en-US')}</div></td>`;
+                            } else {
+                                bodyRows[i] += `<td class="${backColor} text-black border-[2px] border-black p-0"><div class="cell-left font-normal px-2">-</div></td><td class="${backColor} text-black border-[2px] border-black p-0"><div class="cell-right font-sans font-normal px-2">-</div></td>`;
+                            }
+                        }
+
+                        // Baris 4: MM Total Main & Total Backup
+                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black border-[2px] border-black p-0"><div class="cell-center font-bold font-sans text-[13px]">${totalMapMain.toLocaleString('en-US')}</div></td>`;
+                        bodyRows[3] += `<td colspan="2" class="${bgColor} text-black border-[2px] border-black p-0"><div class="cell-center font-normal font-sans text-[13px]">${totalMapBackup.toLocaleString('en-US')}</div></td>`;
+                        
+                        // Baris 5: Ruang kosong agar TB Total bisa berada di bawah
+                        bodyRows[4] += `<td colspan="4" class="${bgColor} border-[2px] border-black p-0 m-0"><div class="h-[26px]"></div></td>`;
+                    });
+
+                    // TB MAPS
+                    tbMaps.forEach(map => {
+                        let tbBg = getMapColor('TB');
+                        
+                        theadRows += `<th colspan="2" class="${tbBg} text-black font-bold border-[2px] border-black p-0 tracking-widest"><div class="cell-center text-sm">${map.name}</div></th>`;
+                        tcol1Rows += `<th class="${tbBg} text-black font-bold border-[2px] border-black p-0 w-[120px]"><div class="cell-center text-xs">Player</div></th>`;
+                        tcol1Rows += `<th class="${tbBg} text-black font-bold border-[2px] border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
+
+                        const stats = data.mapStats[map.id] || [];
+                        const top3 = stats.slice(0, 3);
+                        const backup = stats[3];
+                        const totalTB = top3.reduce((sum, p) => sum + p.average, 0);
+
+                        for(let i=0; i<3; i++) {
+                            const p = top3[i];
+                            let cellBg = (i % 2 === 0) ? 'bg-[#f8f8f8]' : 'bg-white'; 
+                            if (p) {
+                                const pObj = state.players.find(pl => pl.id === p.playerId);
+                                bodyRows[i] += `<td class="${cellBg} text-black border-[2px] border-black p-0 w-[120px]"><div class="cell-left font-bold text-sm truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                                bodyRows[i] += `<td class="${cellBg} text-black border-[2px] border-black p-0 w-[80px]"><div class="cell-right font-sans font-bold text-sm">${p.average.toLocaleString('en-US')}</div></td>`;
+                            } else {
+                                bodyRows[i] += `<td class="${cellBg} text-black border-[2px] border-black p-0"><div class="cell-left px-2">-</div></td><td class="${cellBg} text-black border-[2px] border-black p-0"><div class="cell-right font-sans px-2">-</div></td>`;
+                            }
+                        }
+
+                        let subBg = getSubColor('TB');
+                        
+                        if (backup) {
+                            const pObj = state.players.find(pl => pl.id === backup.playerId);
+                            bodyRows[3] += `<td class="${subBg} text-black border-[2px] border-black p-0 w-[120px]"><div class="cell-left text-sm font-normal truncate w-[120px]">${pObj ? pObj.username : '-'}</div></td>`;
+                            bodyRows[3] += `<td class="${subBg} text-black border-[2px] border-black p-0 w-[80px]"><div class="cell-right font-sans text-sm font-normal">${backup.average.toLocaleString('en-US')}</div></td>`;
+                        } else {
+                            bodyRows[3] += `<td class="${subBg} text-black border-[2px] border-black p-0"><div class="cell-left font-normal px-2">-</div></td><td class="${subBg} text-black border-[2px] border-black p-0"><div class="cell-right font-sans font-normal px-2">-</div></td>`;
+                        }
+
+                        // Baris 5: Total TB
+                        bodyRows[4] += `<td colspan="2" class="${tbBg} text-black border-[2px] border-black p-0"><div class="cell-center font-bold font-sans text-[13px]">${totalTB.toLocaleString('en-US')}</div></td>`;
+                    });
+
+                    theadRows += '</tr>';
+                    tcol1Rows += '</tr>';
+                    
+                    let combinedBody = bodyRows.filter(r => r !== '').map(rowHTML => `<tr>${rowHTML}</tr>`).join('');
+
+                    return `
+                        <div class="w-full text-center mb-6">
+                            <div class="inline-block overflow-x-auto max-w-full align-top">
+                                <table class="border-collapse border-[4px] border-black bg-white shadow-2xl mx-auto">
+                                    <thead>${theadRows}${tcol1Rows}</thead>
+                                    <tbody>${combinedBody}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // --- TABEL SUMMARY & PICK ORDER ---
+                const generateSummaryAndPickOrder = () => {
+                    if (currentStageMaps.length === 0) return '';
+
+                    const playerSummary = {};
+                    const playerList = state.players.filter(p => p.role === 'player');
+                    playerList.forEach(p => {
+                        playerSummary[p.id] = { name: p.username, main: 0, backup: 0 };
+                    });
+
+                    const mapTotals = [];
+
+                    currentStageMaps.forEach(map => {
+                        if (map.mod === 'TB') return; // MENGELUARKAN TB DARI PICK ORDER DAN SUMMARY
+
+                        let mapTotalScore = 0;
+
+                        if (map.mod === 'MM') {
+                            const subMods = ['HR', 'HD', 'NM'];
+                            subMods.forEach(subMod => {
+                                const stats = data.mapStats[`${map.id}_${subMod}`] || [];
+                                const top3 = stats.slice(0, 3);
+                                const backup = stats[3];
+                                
+                                top3.forEach(p => { if (p && playerSummary[p.playerId]) playerSummary[p.playerId].main++; });
+                                if (backup && playerSummary[backup.playerId]) playerSummary[backup.playerId].backup++;
+
+                                mapTotalScore += top3.reduce((sum, p) => sum + (p ? p.average : 0), 0);
+                            });
+                        } else {
+                            const stats = data.mapStats[map.id] || [];
+                            const top3 = stats.slice(0, 3);
+                            const backup = stats[3];
+
+                            top3.forEach(p => { if (p && playerSummary[p.playerId]) playerSummary[p.playerId].main++; });
+                            if (backup && playerSummary[backup.playerId]) playerSummary[backup.playerId].backup++;
+
+                            mapTotalScore += top3.reduce((sum, p) => sum + (p ? p.average : 0), 0);
+                        }
+
+                        mapTotals.push({ name: map.name, mod: map.mod, score: mapTotalScore });
+                    });
+
+                    // Sorting map dari total skor tertinggi
+                    mapTotals.sort((a, b) => b.score - a.score);
+
+                    // Sorting player sesuai abjad
+                    const sortedPlayers = Object.values(playerSummary).sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+                    const maxMain = Math.max(...sortedPlayers.map(p => p.main), 1);
+                    const maxBackup = Math.max(...sortedPlayers.map(p => p.backup), 1);
+
+                    // Kalkulasi warna Heatmap Summary (Putih ke Hijau)
+                    const getSummaryColor = (val, max) => {
+                        if (val === 0 || max === 0) return 'background-color: rgb(255, 255, 255);';
+                        const ratio = val / max;
+                        const r = Math.round(255 - (255 - 99) * ratio);
+                        const g = Math.round(255 - (255 - 190) * ratio);
+                        const b = Math.round(255 - (255 - 123) * ratio);
+                        return `background-color: rgb(${r}, ${g}, ${b});`;
+                    };
+
+                    let summaryRows = '';
+                    sortedPlayers.forEach(p => {
+                        summaryRows += `
+                            <tr>
+                                <td class="border-[2px] border-black px-4 py-1 text-black text-sm text-center bg-[#f2f2f2] font-medium">${p.name}</td>
+                                <td class="border-[2px] border-black px-4 py-1 text-black text-sm text-center font-bold font-sans" style="${getSummaryColor(p.main, maxMain)}">${p.main}</td>
+                                <td class="border-[2px] border-black px-4 py-1 text-black text-sm text-center font-bold font-sans" style="${getSummaryColor(p.backup, maxBackup)}">${p.backup}</td>
+                            </tr>
+                        `;
+                    });
+
+                    const summaryTable = `
+                        <table class="border-collapse border-[4px] border-black bg-white shadow-2xl min-w-[250px] h-fit mx-auto lg:mx-0">
+                            <thead>
+                                <tr><th colspan="3" class="bg-[#cccccc] text-black font-bold text-center border-[2px] border-black py-1.5 text-sm tracking-wider">Summary</th></tr>
+                                <tr class="bg-white">
+                                    <th class="border-[2px] border-black px-4 py-1 text-black font-bold text-sm">Player</th>
+                                    <th class="border-[2px] border-black px-4 py-1 text-black font-bold text-sm">Main</th>
+                                    <th class="border-[2px] border-black px-4 py-1 text-black font-bold text-sm">Backup</th>
+                                </tr>
+                            </thead>
+                            <tbody>${summaryRows}</tbody>
+                        </table>
+                    `;
+
+                    // Kalkulasi warna Heatmap Rank Pick Order (Hijau -> Putih -> Merah)
+                    const getRankColor = (rank, totalMaps) => {
+                        if (totalMaps <= 1) return 'background-color: rgb(255, 255, 255);';
+                        const ratio = (rank - 1) / (totalMaps - 1);
+                        let r, g, b;
+                        if (ratio < 0.5) {
+                            const normalized = ratio * 2; 
+                            r = Math.round(99 + (255 - 99) * normalized);
+                            g = Math.round(190 + (255 - 190) * normalized);
+                            b = Math.round(123 + (255 - 123) * normalized);
+                        } else {
+                            const normalized = (ratio - 0.5) * 2; 
+                            r = Math.round(255 + (248 - 255) * normalized);
+                            g = Math.round(255 + (105 - 255) * normalized);
+                            b = Math.round(255 + (107 - 255) * normalized);
+                        }
+                        return `background-color: rgb(${r}, ${g}, ${b});`;
+                    };
+
+                    let pickOrderRows = '';
+                    const totalM = mapTotals.length;
+                    const colSize = Math.ceil(totalM / 3);
+                    
+                    for (let i = 0; i < colSize; i++) {
+                        const map1 = mapTotals[i];
+                        const map2 = mapTotals[i + colSize];
+                        const map3 = mapTotals[i + colSize * 2];
+
+                        const renderMapCell = (m, rank) => {
+                            if (!m) return `<td class="border-[2px] border-black px-2 py-1 bg-white"></td><td class="border-[2px] border-black px-2 py-1 bg-white"></td>`;
+                            const subCellColor = getSubColor(m.mod); 
+                            return `
+                                <td style="${getRankColor(rank, totalM)}" class="border-[2px] border-black px-3 py-1 text-black font-bold font-sans text-center text-sm w-[40px]">${rank}</td>
+                                <td class="${subCellColor} border-[2px] border-black px-4 py-1 text-black font-medium text-center text-sm w-[100px]">${m.name}</td>
+                            `;
+                        };
+
+                        pickOrderRows += `
+                            <tr>
+                                ${renderMapCell(map1, i + 1)}
+                                ${renderMapCell(map2, map2 ? i + 1 + colSize : '')}
+                                ${renderMapCell(map3, map3 ? i + 1 + colSize * 2 : '')}
+                            </tr>
+                        `;
+                    }
+
+                    const pickOrderTable = `
+                        <table class="border-collapse border-[4px] border-black bg-white shadow-2xl h-fit mx-auto lg:mx-0">
+                            <thead>
+                                <tr><th colspan="6" class="bg-[#cccccc] text-black font-bold text-center border-[2px] border-black py-1.5 text-sm tracking-wider">Pick Order (by Score)</th></tr>
+                                <tr>
+                                    <th colspan="2" class="bg-[#b4c6e7] border-[2px] border-black py-2 px-6 text-black font-medium text-sm leading-tight text-center w-[140px]">Prioritas</th>
+                                    <th colspan="2" class="bg-[#e2efda] border-[2px] border-black py-2 px-6 text-black font-medium text-sm leading-tight text-center w-[140px]">Kalo Ga Ada<br>Pilihan Lain</th>
+                                    <th colspan="2" class="bg-[#f4cccc] border-[2px] border-black py-2 px-6 text-black font-medium text-sm leading-tight text-center w-[140px]">Ban / Males</th>
+                                </tr>
+                            </thead>
+                            <tbody>${pickOrderRows}</tbody>
+                        </table>
+                    `;
+
+                    return `
+                        <div class="w-full text-center mt-6">
+                            <div class="inline-flex flex-col lg:flex-row justify-center items-start gap-8 max-w-full align-top">
+                                ${summaryTable}
+                                ${pickOrderTable}
+                            </div>
+                        </div>
+                    `;
+                };
+
+                const row1 = generateRegularGrid(['NM', 'DT']); 
+                const row2 = generateRegularGrid(['HD', 'HR']); 
+                const row3 = generateMMAndTBGrid(); 
+                const row4 = generateSummaryAndPickOrder();
+
+                let rosterHTML = row1 + row2 + row3 + row4;
+
+                if (currentStageMaps.length === 0) {
+                    rosterHTML = `<div class="bg-slate-800 p-8 text-center text-slate-500 rounded-xl border border-slate-700">Belum ada map terdaftar di stage ini.</div>`;
+                }
+                
+                viewHTML = `
+                    <div class="w-full overflow-x-auto pb-4 pt-1">
+                        <div class="w-fit min-w-full rounded-xl relative pt-2 pb-2 mx-auto flex flex-col items-center">
+                            ${rosterHTML}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="fade-in w-full flex flex-col">
+                    <div class="flex justify-center items-center mb-5 w-full">
+                        <div class="flex flex-col items-center text-center">
+                            <select onchange="window.changeStage(this.value)" class="bg-transparent text-2xl sm:text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last px-2">
+                                <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>QUALIFIER - PLAYER SCORES ▾</option>
+                                <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>RO32 - ROSTER ▾</option>
+                                <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>RO16 - ROSTER ▾</option>
+                                <option value="Semi Final" class="bg-slate-900 text-base" ${state.currentStage === 'Semi Final' ? 'selected' : ''}>SEMI FINAL - ROSTER ▾</option>
+                                <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>FINAL - ROSTER ▾</option>
+                                <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>GRAND FINAL - ROSTER ▾</option>
+                            </select>
+                        </div>
+                    </div>
+                    ${viewHTML}
+                </div>
+            `;
         }
 
         function getSubColor(mod) {
