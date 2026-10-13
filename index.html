@@ -1063,7 +1063,7 @@
                         <div class="w-full text-center mt-6">
                             <div class="inline-flex flex-col lg:flex-row justify-center items-start gap-8 max-w-full align-top">
                                 ${summaryTable}
-                                ${pickOrderTable}
+                                ${state.currentStage === 'Qualifier' ? '' : pickOrderTable}
                             </div>
                         </div>
                     `;
