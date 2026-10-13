@@ -112,8 +112,8 @@
         const state = {
             currentUser: null,
             view: 'login',
-            currentStage: localStorage.getItem('currentStage') || 'Qualifier - TO',
-            adminStage: localStorage.getItem('adminStage') || 'Qualifier - TO',
+            currentStage: localStorage.getItem('currentStage') || 'Qualifier - Try Out',
+            adminStage: localStorage.getItem('adminStage') || 'Qualifier - Try Out',
             adminMod: localStorage.getItem('adminMod') || 'NM',
             players: [],
             beatmaps: [],
@@ -323,7 +323,7 @@
         }
 
         window.addBeatmap = async function(stage, mod) {
-            const mapsInCurrentStage = state.beatmaps.filter(b => (b.stage || 'Qualifier - TO') === stage && b.mod === mod);
+            const mapsInCurrentStage = state.beatmaps.filter(b => (b.stage || 'Qualifier - Try Out') === stage && b.mod === mod);
             const nextNumber = mapsInCurrentStage.length + 1;
             let autoName = `${mod}${nextNumber}`; 
             
@@ -611,9 +611,9 @@
         }
 
         function renderLeaderboard() {
-            const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier - TO') === state.currentStage);
+            const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier - Try Out') === state.currentStage);
             const data = getLeaderboardData(currentStageMaps);
-            const isQualifier = state.currentStage === 'Qualifier - TO';
+            const isQualifier = state.currentStage === 'Qualifier - Try Out';
 
             let viewHTML = '';
 
@@ -1094,7 +1094,7 @@
                     <div class="flex justify-center items-center mb-5 w-full">
                         <div class="flex flex-col items-center text-center">
                             <select onchange="window.changeStage(this.value)" class="bg-transparent text-2xl sm:text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last px-2">
-                                <option value="Qualifier - TO" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier - TO' ? 'selected' : ''}>QUALIFIER - TO - PLAYER SCORES ▾</option>
+                                <option value="Qualifier - Try Out" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier - Try Out' ? 'selected' : ''}>Qualifier - Try Out - PLAYER SCORES ▾</option>
                                 <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>QUALIFIER - ROSTER ▾</option>
                                 <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>RO32 - ROSTER ▾</option>
                                 <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>RO16 - ROSTER ▾</option>
@@ -1110,7 +1110,7 @@
         }
 
         function renderSubmitScore() {
-            const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier - TO') === state.currentStage);
+            const currentStageMaps = state.beatmaps.filter(b => (b.stage || 'Qualifier - Try Out') === state.currentStage);
             const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
             let tableRows = '';
 
@@ -1201,7 +1201,7 @@
                 <div class="fade-in max-w-5xl mx-auto w-full">
                     <div class="flex flex-col mb-6 items-center">
                         <select onchange="window.changeStage(this.value)" class="bg-transparent text-2xl sm:text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last px-2">
-                            <option value="Qualifier - TO" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier - TO' ? 'selected' : ''}>Form Submission: QUALIFIER - TO ▾</option>
+                            <option value="Qualifier - Try Out" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier - Try Out' ? 'selected' : ''}>Form Submission: Qualifier - Try Out ▾</option>
                             <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>Form Submission: QUALIFIER ▾</option>
                             <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>Form Submission: RO32 ▾</option>
                             <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>Form Submission: RO16 ▾</option>
@@ -1254,8 +1254,8 @@
             `).join('');
             if (players.length === 0) playerRows = `<tr><td colspan="2" class="px-4 py-6 text-center text-slate-500">Tidak ada player terdaftar.</td></tr>`;
 
-            const currentAdminStage = state.adminStage || 'Qualifier - TO';
-            const filteredBeatmaps = state.beatmaps.filter(b => (b.stage || 'Qualifier - TO') === currentAdminStage);
+            const currentAdminStage = state.adminStage || 'Qualifier - Try Out';
+            const filteredBeatmaps = state.beatmaps.filter(b => (b.stage || 'Qualifier - Try Out') === currentAdminStage);
 
             let beatmapRows = filteredBeatmaps.map(b => {
                 let badgeColor = 'bg-slate-600 text-white';
@@ -1269,7 +1269,7 @@
                 return `
                 <tr class="border-b border-slate-700 hover:bg-slate-700/50 transition">
                     <td class="px-4 py-3 whitespace-nowrap text-white flex items-center">
-                        <span class="bg-slate-700 border border-slate-600 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded mr-2 uppercase tracking-wider">${b.stage || 'Qualifier - TO'}</span>
+                        <span class="bg-slate-700 border border-slate-600 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded mr-2 uppercase tracking-wider">${b.stage || 'Qualifier - Try Out'}</span>
                         <span class="${badgeColor} text-xs font-bold px-2 py-1 rounded mr-2">${b.mod}</span>
                         <span class="font-medium">${b.name}</span>
                     </td>
@@ -1319,7 +1319,7 @@
                             <div class="p-4 border-b border-slate-700">
                                 <form onsubmit="event.preventDefault(); window.addBeatmap(this.mapStage.value, this.mapMod.value);" class="flex gap-2 w-fit">
                                     <select name="mapStage" required onchange="window.changeAdminStage(this.value)" class="bg-slate-900 border border-slate-600 text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-emerald-500 w-[140px] text-sm">
-                                        <option value="Qualifier - TO" ${state.adminStage === 'Qualifier - TO' ? 'selected' : ''}>Qualifier - TO</option>
+                                        <option value="Qualifier - Try Out" ${state.adminStage === 'Qualifier - Try Out' ? 'selected' : ''}>Qualifier - Try Out</option>
                                         <option value="Qualifier" ${state.adminStage === 'Qualifier' ? 'selected' : ''}>Qualifier</option>
                                         <option value="RO32" ${state.adminStage === 'RO32' ? 'selected' : ''}>RO32</option>
                                         <option value="RO16" ${state.adminStage === 'RO16' ? 'selected' : ''}>RO16</option>
@@ -1384,11 +1384,11 @@
                     { id: 'p1', username: 'faker', password: '123', role: 'player' }
                 ];
                 const initialMaps = [
-                    { id: 'nm1', stage: 'Qualifier - TO', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier - TO', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier - TO', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier - TO', mod: 'NM', name: 'NM4' },
-                    { id: 'hd1', stage: 'Qualifier - TO', mod: 'HD', name: 'HD1' }, { id: 'hd2', stage: 'Qualifier - TO', mod: 'HD', name: 'HD2' }, { id: 'hd3', stage: 'Qualifier - TO', mod: 'HD', name: 'HD3' },
-                    { id: 'hr1', stage: 'Qualifier - TO', mod: 'HR', name: 'HR1' }, { id: 'hr2', stage: 'Qualifier - TO', mod: 'HR', name: 'HR2' }, { id: 'hr3', stage: 'Qualifier - TO', mod: 'HR', name: 'HR3' },
-                    { id: 'dt1', stage: 'Qualifier - TO', mod: 'DT', name: 'DT1' }, { id: 'dt2', stage: 'Qualifier - TO', mod: 'DT', name: 'DT2' }, { id: 'dt3', stage: 'Qualifier - TO', mod: 'DT', name: 'DT3' },
-                    { id: 'mm1', stage: 'Qualifier - TO', mod: 'MM', name: 'MM1' }, { id: 'mm2', stage: 'Qualifier - TO', mod: 'MM', name: 'MM2' }, { id: 'tb1', stage: 'Qualifier - TO', mod: 'TB', name: 'TB1' }
+                    { id: 'nm1', stage: 'Qualifier - Try Out', mod: 'NM', name: 'NM1' }, { id: 'nm2', stage: 'Qualifier - Try Out', mod: 'NM', name: 'NM2' }, { id: 'nm3', stage: 'Qualifier - Try Out', mod: 'NM', name: 'NM3' }, { id: 'nm4', stage: 'Qualifier - Try Out', mod: 'NM', name: 'NM4' },
+                    { id: 'hd1', stage: 'Qualifier - Try Out', mod: 'HD', name: 'HD1' }, { id: 'hd2', stage: 'Qualifier - Try Out', mod: 'HD', name: 'HD2' }, { id: 'hd3', stage: 'Qualifier - Try Out', mod: 'HD', name: 'HD3' },
+                    { id: 'hr1', stage: 'Qualifier - Try Out', mod: 'HR', name: 'HR1' }, { id: 'hr2', stage: 'Qualifier - Try Out', mod: 'HR', name: 'HR2' }, { id: 'hr3', stage: 'Qualifier - Try Out', mod: 'HR', name: 'HR3' },
+                    { id: 'dt1', stage: 'Qualifier - Try Out', mod: 'DT', name: 'DT1' }, { id: 'dt2', stage: 'Qualifier - Try Out', mod: 'DT', name: 'DT2' }, { id: 'dt3', stage: 'Qualifier - Try Out', mod: 'DT', name: 'DT3' },
+                    { id: 'mm1', stage: 'Qualifier - Try Out', mod: 'MM', name: 'MM1' }, { id: 'mm2', stage: 'Qualifier - Try Out', mod: 'MM', name: 'MM2' }, { id: 'tb1', stage: 'Qualifier - Try Out', mod: 'TB', name: 'TB1' }
                 ];
                 state.beatmaps = initialMaps;
             } else {
