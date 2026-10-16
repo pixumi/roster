@@ -709,6 +709,41 @@
             } else {
                 // --- TAMPILAN ROSTER GRID BARU ---
                 
+                // Mencegah duplikasi player & mengurutkan performa terbaik di Map MM
+                const getMMAssignments = (mapId, mapStats) => {
+                    const mmMods = ['HR', 'HD', 'NM'];
+                    const allScores = [];
+                    mmMods.forEach(subMod => {
+                        const stats = mapStats[`${mapId}_${subMod}`] || [];
+                        stats.forEach(s => allScores.push({ subMod, playerId: s.playerId, average: s.average }));
+                    });
+                    allScores.sort((a, b) => b.average - a.average);
+
+                    const assignedMains = { HR: null, HD: null, NM: null };
+                    const usedPlayers = new Set();
+
+                    // Prioritas pengisian Main (skor mutlak tertinggi)
+                    for (const s of allScores) {
+                        if (!assignedMains[s.subMod] && !usedPlayers.has(s.playerId)) {
+                            assignedMains[s.subMod] = s;
+                            usedPlayers.add(s.playerId);
+                        }
+                    }
+
+                    // Prioritas pengisian Backup (sisa player tertinggi)
+                    const assignedBackups = { HR: null, HD: null, NM: null };
+                    for (const s of allScores) {
+                        if (!assignedBackups[s.subMod] && !usedPlayers.has(s.playerId)) {
+                            assignedBackups[s.subMod] = s;
+                            usedPlayers.add(s.playerId);
+                        }
+                    }
+
+                    return { mains: assignedMains, backups: assignedBackups };
+                };
+
+                
+                
                 const generateRegularGrid = (modsArray) => {
                     let mapsInGroup = [];
                     modsArray.forEach(m => {
@@ -805,23 +840,22 @@
                         tcol1Rows += `<th class="${bgColor} text-black font-bold border-[2px] border-black p-0 w-[100px]"><div class="cell-center text-xs">Backup</div></th>`;
                         tcol1Rows += `<th class="${bgColor} text-black font-bold border-[2px] border-black p-0 w-[80px]"><div class="cell-center text-xs">Score</div></th>`;
 
-                        const statsHR = data.mapStats[`${map.id}_HR`] || [];
-                        const statsHD = data.mapStats[`${map.id}_HD`] || [];
-                        const statsNM = data.mapStats[`${map.id}_NM`] || [];
+                        // Terapkan algoritma filtering
+                        const assignments = getMMAssignments(map.id, data.mapStats);
 
                         const rowsData = [
-                            { stats: statsHR, mainColor: hrColor, backColor: backupColorHR },
-                            { stats: statsHD, mainColor: hdColor, backColor: backupColorHD },
-                            { stats: statsNM, mainColor: nmColor, backColor: backupColorNM }
+                            { subMod: 'HR', mainColor: hrColor, backColor: backupColorHR },
+                            { subMod: 'HD', mainColor: hdColor, backColor: backupColorHD },
+                            { subMod: 'NM', mainColor: nmColor, backColor: backupColorNM }
                         ];
 
                         let totalMapMain = 0;
                         let totalMapBackup = 0;
 
                         for(let i=0; i<3; i++) {
-                            const { stats, mainColor, backColor } = rowsData[i];
-                            const mainP = stats[0];
-                            const backupP = stats[1]; 
+                            const { subMod, mainColor, backColor } = rowsData[i];
+                            const mainP = assignments.mains[subMod];
+                            const backupP = assignments.backups[subMod];
 
                             if(mainP) totalMapMain += mainP.average;
                             if(backupP) totalMapBackup += backupP.average;
@@ -925,16 +959,19 @@
                         let mapTotalScore = 0;
 
                         if (map.mod === 'MM') {
+                            const assignments = getMMAssignments(map.id, data.mapStats);
                             const subMods = ['HR', 'HD', 'NM'];
                             subMods.forEach(subMod => {
-                                const stats = data.mapStats[`${map.id}_${subMod}`] || [];
-                                const top3 = stats.slice(0, 3);
-                                const backup = stats[3];
+                                const mainP = assignments.mains[subMod];
+                                const backupP = assignments.backups[subMod];
                                 
-                                top3.forEach(p => { if (p && playerSummary[p.playerId]) playerSummary[p.playerId].main++; });
-                                if (backup && playerSummary[backup.playerId]) playerSummary[backup.playerId].backup++;
-
-                                mapTotalScore += top3.reduce((sum, p) => sum + (p ? p.average : 0), 0);
+                                if (mainP && playerSummary[mainP.playerId]) {
+                                    playerSummary[mainP.playerId].main++;
+                                    mapTotalScore += mainP.average;
+                                }
+                                if (backupP && playerSummary[backupP.playerId]) {
+                                    playerSummary[backupP.playerId].backup++;
+                                }
                             });
                         } else {
                             const stats = data.mapStats[map.id] || [];
