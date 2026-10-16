@@ -732,22 +732,31 @@
                     allScores.sort((a, b) => b.average - a.average);
 
                     const assignedMains = { HR: null, HD: null, NM: null };
-                    const usedPlayers = new Set();
+                    const usedMainPlayers = new Set();
 
-                    // Prioritas pengisian Main (skor mutlak tertinggi)
+                    // Prioritas pengisian Main (skor mutlak tertinggi, 1 player = max 1 role Main)
                     for (const s of allScores) {
-                        if (!assignedMains[s.subMod] && !usedPlayers.has(s.playerId)) {
+                        if (!assignedMains[s.subMod] && !usedMainPlayers.has(s.playerId)) {
                             assignedMains[s.subMod] = s;
-                            usedPlayers.add(s.playerId);
+                            usedMainPlayers.add(s.playerId);
                         }
                     }
 
-                    // Prioritas pengisian Backup (sisa player tertinggi)
+                    // Prioritas pengisian Backup (antrean terpisah)
                     const assignedBackups = { HR: null, HD: null, NM: null };
+                    const usedBackupPlayers = new Set();
+
                     for (const s of allScores) {
-                        if (!assignedBackups[s.subMod] && !usedPlayers.has(s.playerId)) {
-                            assignedBackups[s.subMod] = s;
-                            usedPlayers.add(s.playerId);
+                        // Syarat Backup: 
+                        // 1. Mod ini belum ada backup-nya
+                        // 2. Player belum jadi backup di mod MM lain
+                        // 3. Player ini BUKAN Main di mod MM yang SAMA
+                        if (!assignedBackups[s.subMod] && !usedBackupPlayers.has(s.playerId)) {
+                            const isMainHere = assignedMains[s.subMod] && assignedMains[s.subMod].playerId === s.playerId;
+                            if (!isMainHere) {
+                                assignedBackups[s.subMod] = s;
+                                usedBackupPlayers.add(s.playerId);
+                            }
                         }
                     }
 
@@ -1254,13 +1263,14 @@
             // Dropdown khusus Admin
             let adminPlayerDropdown = '';
             if (state.currentUser.role === 'admin') {
-                const playerOptions = players.map(p => `<option value="${p.id}" ${targetPlayerId === p.id ? 'selected' : ''}>${p.username}</option>`).join('');
+                // Menambahkan class="bg-slate-900 text-white" pada setiap option agar tidak putih-on-putih
+                const playerOptions = players.map(p => `<option value="${p.id}" class="bg-slate-900 text-white" ${targetPlayerId === p.id ? 'selected' : ''}>${p.username}</option>`).join('');
                 adminPlayerDropdown = `
                     <div class="mt-3 mb-2 w-full flex justify-center fade-in">
                         <div class="flex items-center gap-2 bg-slate-800 border border-brand-500/50 rounded-lg px-3 py-2 shadow-[0_0_15px_rgba(139,92,246,0.2)]">
                             <i class="fa-solid fa-user-pen text-brand-400"></i>
                             <select onchange="window.changeSubmitPlayer(this.value)" class="bg-transparent text-white focus:outline-none text-sm font-bold cursor-pointer w-40 sm:w-48 text-center-last">
-                                ${players.length === 0 ? '<option value="">-- Belum ada player --</option>' : playerOptions}
+                                ${players.length === 0 ? '<option value="" class="bg-slate-900 text-white">-- Belum ada player --</option>' : playerOptions}
                             </select>
                         </div>
                     </div>
