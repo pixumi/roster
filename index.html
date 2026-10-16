@@ -721,7 +721,7 @@
             } else {
                 // --- TAMPILAN ROSTER GRID BARU ---
                 
-                // Mencegah duplikasi player & mengurutkan performa terbaik di Map MM
+                // Mencegah duplikasi player utama & mengurutkan performa terbaik di Map MM
                 const getMMAssignments = (mapId, mapStats) => {
                     const mmMods = ['HR', 'HD', 'NM'];
                     const allScores = [];
@@ -734,7 +734,7 @@
                     const assignedMains = { HR: null, HD: null, NM: null };
                     const usedMainPlayers = new Set();
 
-                    // Prioritas pengisian Main (skor mutlak tertinggi, 1 player = max 1 role Main)
+                    // Prioritas pengisian Main (skor mutlak tertinggi, 1 player = max 1 role Main di map MM yg sama)
                     for (const s of allScores) {
                         if (!assignedMains[s.subMod] && !usedMainPlayers.has(s.playerId)) {
                             assignedMains[s.subMod] = s;
@@ -742,20 +742,17 @@
                         }
                     }
 
-                    // Prioritas pengisian Backup (antrean terpisah)
+                    // Prioritas pengisian Backup (Pemain BISA mem-backup lebih dari 1 mod sekaligus)
                     const assignedBackups = { HR: null, HD: null, NM: null };
-                    const usedBackupPlayers = new Set();
 
                     for (const s of allScores) {
                         // Syarat Backup: 
                         // 1. Mod ini belum ada backup-nya
-                        // 2. Player belum jadi backup di mod MM lain
-                        // 3. Player ini BUKAN Main di mod MM yang SAMA
-                        if (!assignedBackups[s.subMod] && !usedBackupPlayers.has(s.playerId)) {
+                        // 2. Player ini BUKAN Main di sub-mod MM yang SAMA (tidak bisa backup diri sendiri)
+                        if (!assignedBackups[s.subMod]) {
                             const isMainHere = assignedMains[s.subMod] && assignedMains[s.subMod].playerId === s.playerId;
                             if (!isMainHere) {
                                 assignedBackups[s.subMod] = s;
-                                usedBackupPlayers.add(s.playerId);
                             }
                         }
                     }
