@@ -160,6 +160,11 @@
             localStorage.setItem('adminMod', mod);
         }
 
+        window.changeSubmitPlayer = function(playerId) {
+            state.submitPlayerId = playerId;
+            renderApp();
+        }
+
         // --- DATABASE FETCH (CLOUDFLARE) ---
         async function fetchDatabase() {
             if (!API_URL) return; 
@@ -381,7 +386,14 @@
             let added = 0;
             let batchData = [];
 
+            const targetPlayerId = formData.get('target_player_id');
+            if (!targetPlayerId) {
+                showToast('Pilih player terlebih dahulu!', 'error');
+                return;
+            }
+
             for (let [key, value] of formData.entries()) {
+                if (key === 'target_player_id') continue;
                 if (!value || value.trim() === '') continue;
                 
                 const scoreStr = value.replace(/,/g, '');
@@ -392,17 +404,17 @@
                 const mapKey = key.replace('score_', ''); 
 
                 if(API_URL) {
-                    batchData.push({ player_id: state.currentUser.id, map_key: mapKey, score: score });
+                    batchData.push({ player_id: targetPlayerId, map_key: mapKey, score: score });
                 } else {
                     const existingIdx = state.scores.findIndex(
-                        s => s.player_id === state.currentUser.id && s.map_key === mapKey
+                        s => s.player_id === targetPlayerId && s.map_key === mapKey
                     );
                     if (existingIdx !== -1) {
                         state.scores[existingIdx].score = score;
                     } else {
                         state.scores.push({
                             id: window.generateId(),
-                            player_id: state.currentUser.id,
+                            player_id: targetPlayerId,
                             map_key: mapKey,
                             score: score
                         });
@@ -534,7 +546,7 @@
                 <button onclick="window.navigate('leaderboard')" class="${state.view === 'leaderboard' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition py-2 whitespace-nowrap px-1">
                     <i class="fa-solid fa-trophy mr-1"></i> Leaderboard
                 </button>
-                ${state.currentUser.role === 'player' ? `
+                ${(state.currentUser.role === 'player' || state.currentUser.role === 'admin') ? `
                     <button onclick="window.navigate('submit')" class="${state.view === 'submit' ? 'text-brand-400 font-bold' : 'text-slate-300 hover:text-white'} transition py-2 whitespace-nowrap px-1">
                         <i class="fa-solid fa-upload mr-1"></i> Submit Score
                     </button>
@@ -1151,9 +1163,14 @@
             const modOrder = ['NM', 'HD', 'HR', 'DT', 'MM', 'TB'];
             let tableRows = '';
 
+            // Tentukan target player (Jika player = diri sendiri, jika Admin = player yang dipilih dari dropdown)
+            const players = state.players.filter(p => p.role === 'player');
+            let targetPlayerId = state.currentUser.role === 'player' ? state.currentUser.id : (state.submitPlayerId || (players.length > 0 ? players[0].id : null));
+
             function getScoreValue(mapId, run, subMod = null) {
+                if (!targetPlayerId) return '';
                 const exactKey = subMod ? `${mapId}_${run}_${subMod}` : `${mapId}_${run}`;
-                const runs = state.scores.filter(s => s.player_id === state.currentUser.id && s.map_key === exactKey);
+                const runs = state.scores.filter(s => s.player_id === targetPlayerId && s.map_key === exactKey);
                 return runs.length > 0 ? runs[runs.length - 1].score.toLocaleString('en-US') : '';
             }
 
@@ -1234,21 +1251,39 @@
                 tableRows = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">Belum ada map terdaftar di stage ini.</td></tr>`;
             }
 
+            // Dropdown khusus Admin
+            let adminPlayerDropdown = '';
+            if (state.currentUser.role === 'admin') {
+                const playerOptions = players.map(p => `<option value="${p.id}" ${targetPlayerId === p.id ? 'selected' : ''}>${p.username}</option>`).join('');
+                adminPlayerDropdown = `
+                    <div class="mt-3 mb-2 w-full flex justify-center fade-in">
+                        <div class="flex items-center gap-2 bg-slate-800 border border-brand-500/50 rounded-lg px-3 py-2 shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+                            <i class="fa-solid fa-user-pen text-brand-400"></i>
+                            <select onchange="window.changeSubmitPlayer(this.value)" class="bg-transparent text-white focus:outline-none text-sm font-bold cursor-pointer w-40 sm:w-48 text-center-last">
+                                ${players.length === 0 ? '<option value="">-- Belum ada player --</option>' : playerOptions}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }
+
             return `
                 <div class="fade-in max-w-5xl mx-auto w-full">
                     <div class="flex flex-col mb-6 items-center">
                         <select onchange="window.changeStage(this.value)" class="bg-transparent text-2xl sm:text-3xl font-bold text-white mb-1 uppercase tracking-tight appearance-none cursor-pointer hover:text-brand-400 transition focus:outline-none w-fit text-center text-center-last px-2">
-                            <option value="Try Out" class="bg-slate-900 text-base" ${state.currentStage === 'Try Out' ? 'selected' : ''}>Try Out ▾</option>
-                            <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>QUALIFIER ▾</option>
-                            <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>RO32 ▾</option>
-                            <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>RO16 ▾</option>
-                            <option value="Semi Final" class="bg-slate-900 text-base" ${state.currentStage === 'Semi Final' ? 'selected' : ''}>SEMI FINAL ▾</option>
-                            <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>FINAL ▾</option>
-                            <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>GRAND FINAL ▾</option>
+                            <option value="Try Out" class="bg-slate-900 text-base" ${state.currentStage === 'Try Out' ? 'selected' : ''}>Form Submission: Try Out ▾</option>
+                            <option value="Qualifier" class="bg-slate-900 text-base" ${state.currentStage === 'Qualifier' ? 'selected' : ''}>Form Submission: QUALIFIER ▾</option>
+                            <option value="RO32" class="bg-slate-900 text-base" ${state.currentStage === 'RO32' ? 'selected' : ''}>Form Submission: RO32 ▾</option>
+                            <option value="RO16" class="bg-slate-900 text-base" ${state.currentStage === 'RO16' ? 'selected' : ''}>Form Submission: RO16 ▾</option>
+                            <option value="Semi Final" class="bg-slate-900 text-base" ${state.currentStage === 'Semi Final' ? 'selected' : ''}>Form Submission: SEMI FINAL ▾</option>
+                            <option value="Final" class="bg-slate-900 text-base" ${state.currentStage === 'Final' ? 'selected' : ''}>Form Submission: FINAL ▾</option>
+                            <option value="Grand Final" class="bg-slate-900 text-base" ${state.currentStage === 'Grand Final' ? 'selected' : ''}>Form Submission: GRAND FINAL ▾</option>
                         </select>
+                        ${adminPlayerDropdown}
                     </div>
                     
                     <form onsubmit="window.saveScores(event, this)" class="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden">
+                        <input type="hidden" name="target_player_id" value="${targetPlayerId || ''}">
                         <div class="overflow-x-auto w-full">
                             <table class="w-full text-left border-collapse min-w-[600px]">
                                 <thead class="bg-slate-900">
