@@ -380,6 +380,45 @@
             }
         }
 
+        window.validateScore = function(input) {
+            let val = input.value.replace(/[^0-9]/g, '');
+            if (val.length > 0) {
+                if (val.startsWith('1')) {
+                    if (val.length > 7) val = val.slice(0, 7);
+                    if (parseInt(val) > 1300000) val = '1300000';
+                } else {
+                    if (val.length > 6) val = val.slice(0, 6);
+                }
+                input.value = Number(val).toLocaleString('en-US'); 
+            } else {
+                input.value = '';
+            }
+        }
+
+        // ---> PASTE KOD INI DI SINI <---
+        // Fungsi untuk mengira purata secara automatik pada UI Submit Score
+        window.calcAvg = function(mapId, subMod = null) {
+            let sum = 0;
+            let count = 0;
+            for (let r = 1; r <= 3; r++) {
+                let inputName = subMod ? `score_${mapId}_${r}_${subMod}` : `score_${mapId}_${r}`;
+                let inputEl = document.querySelector(`input[name="${inputName}"]`);
+                if (inputEl && inputEl.value) {
+                    let val = Number(inputEl.value.replace(/,/g, ''));
+                    if (!isNaN(val) && val > 0) {
+                        sum += val;
+                        count++;
+                    }
+                }
+            }
+            let avgElId = subMod ? `avg_${mapId}_${subMod}` : `avg_${mapId}`;
+            let avgEl = document.getElementById(avgElId);
+            if (avgEl) {
+                avgEl.innerText = count > 0 ? Math.round(sum / count).toLocaleString('en-US') : '-';
+            }
+        }
+        // -------------------------------
+
         window.saveScores = async function(event, form) {
             event.preventDefault();
             const formData = new FormData(form);
@@ -1204,9 +1243,10 @@
                 if(mod === 'MM') modColor = 'text-purple-500';
                 if(mod === 'TB') modColor = 'text-slate-400';
 
+                // Colspan diubah menjadi 5 karena ada lajur AVG
                 tableRows += `
                     <tr class="bg-slate-900 border-b border-slate-700">
-                        <td colspan="4" class="px-6 py-3 font-bold ${modColor} text-lg">
+                        <td colspan="5" class="px-6 py-3 font-bold ${modColor} text-lg">
                             ${mod} Pool
                         </td>
                     </tr>
@@ -1221,23 +1261,44 @@
                                     <div class="flex flex-col gap-2 w-full max-w-[120px] mx-auto">
                                         <div class="flex items-center gap-1 sm:gap-1.5 w-full">
                                             <span class="text-[10px] sm:text-[11px] font-bold text-emerald-400 w-5 text-left shrink-0">NM</span>
-                                            <input type="text" name="score_${map.id}_${r}_NM" value="${getScoreValue(map.id, r, 'NM')}" oninput="window.validateScore(this)" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs sm:text-sm text-center ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}" placeholder="0" ${isReadOnly ? 'readonly' : ''}>
+                                            <input type="text" name="score_${map.id}_${r}_NM" value="${getScoreValue(map.id, r, 'NM')}" oninput="window.validateScore(this); window.calcAvg('${map.id}', 'NM')" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs sm:text-sm text-center ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}" placeholder="0" ${isReadOnly ? 'readonly' : ''}>
                                         </div>
                                         <div class="flex items-center gap-1 sm:gap-1.5 w-full">
                                             <span class="text-[10px] sm:text-[11px] font-bold text-amber-500 w-5 text-left shrink-0">HD</span>
-                                            <input type="text" name="score_${map.id}_${r}_HD" value="${getScoreValue(map.id, r, 'HD')}" oninput="window.validateScore(this)" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs sm:text-sm text-center ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}" placeholder="0" ${isReadOnly ? 'readonly' : ''}>
+                                            <input type="text" name="score_${map.id}_${r}_HD" value="${getScoreValue(map.id, r, 'HD')}" oninput="window.validateScore(this); window.calcAvg('${map.id}', 'HD')" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs sm:text-sm text-center ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}" placeholder="0" ${isReadOnly ? 'readonly' : ''}>
                                         </div>
                                         <div class="flex items-center gap-1 sm:gap-1.5 w-full">
                                             <span class="text-[10px] sm:text-[11px] font-bold text-red-500 w-5 text-left shrink-0">HR</span>
-                                            <input type="text" name="score_${map.id}_${r}_HR" value="${getScoreValue(map.id, r, 'HR')}" oninput="window.validateScore(this)" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs sm:text-sm text-center ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}" placeholder="0" ${isReadOnly ? 'readonly' : ''}>
+                                            <input type="text" name="score_${map.id}_${r}_HR" value="${getScoreValue(map.id, r, 'HR')}" oninput="window.validateScore(this); window.calcAvg('${map.id}', 'HR')" class="flex-1 min-w-0 bg-slate-900 border border-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 font-mono text-xs sm:text-sm text-center ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}" placeholder="0" ${isReadOnly ? 'readonly' : ''}>
                                         </div>
                                     </div>
                                 </td>
                             `;
                         }
+
+                        // Lajur Average untuk MM
+                        let avgCols = `<td class="px-2 sm:px-3 py-3 align-middle"><div class="flex flex-col gap-2 w-full max-w-[120px] mx-auto">`;
+                        ['NM', 'HD', 'HR'].forEach(subMod => {
+                            let sum = 0; let count = 0;
+                            for(let r=1; r<=3; r++){
+                                const val = getScoreValue(map.id, r, subMod);
+                                if (val) { sum += Number(val.replace(/,/g, '')); count++; }
+                            }
+                            let avgStr = count > 0 ? Math.round(sum/count).toLocaleString('en-US') : '-';
+                            let subColor = subMod === 'NM' ? 'text-emerald-400' : (subMod === 'HD' ? 'text-amber-500' : 'text-red-500');
+                            avgCols += `
+                                <div class="flex items-center justify-between w-full h-[34px] sm:h-[38px] px-2 bg-slate-800/50 rounded-lg border border-slate-700 shadow-inner">
+                                    <span class="text-[10px] sm:text-[11px] font-bold ${subColor} w-5 text-left shrink-0">${subMod}</span>
+                                    <span id="avg_${map.id}_${subMod}" class="font-mono text-xs sm:text-sm font-bold text-brand-400">${avgStr}</span>
+                                </div>
+                            `;
+                        });
+                        avgCols += `</div></td>`;
+                        runCols += avgCols;
+
                         tableRows += `
                             <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition">
-                                <td class="px-4 sm:px-6 py-4 font-medium text-slate-200 border-r border-slate-700/50 w-1/4">
+                                <td class="px-4 sm:px-6 py-4 font-medium text-slate-200 border-r border-slate-700/50 w-1/5">
                                     ${map.name}
                                 </td>
                                 ${runCols}
@@ -1245,19 +1306,27 @@
                         `;
                     } else {
                         let runCols = '';
+                        let sum = 0; let count = 0;
                         for(let r=1; r<=3; r++){
+                            const val = getScoreValue(map.id, r);
+                            if (val) { sum += Number(val.replace(/,/g, '')); count++; }
                             runCols += `
                                 <td class="px-2 sm:px-3 py-4 border-r border-slate-700/50">
                                     <div class="relative w-full max-w-[120px] mx-auto">
                                         <div class="absolute inset-y-0 left-0 pl-2 sm:pl-2.5 flex items-center pointer-events-none text-slate-500 font-bold text-xs">#</div>
-                                        <input type="text" name="score_${map.id}_${r}" value="${getScoreValue(map.id, r)}" oninput="window.validateScore(this)" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-5 sm:pl-6 pr-1 sm:pr-2 py-2 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-mono text-xs sm:text-sm text-left ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}" placeholder="0" ${isReadOnly ? 'readonly' : ''}>
+                                        <input type="text" name="score_${map.id}_${r}" value="${val}" oninput="window.validateScore(this); window.calcAvg('${map.id}')" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg pl-5 sm:pl-6 pr-1 sm:pr-2 py-2 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-mono text-xs sm:text-sm text-left ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}" placeholder="0" ${isReadOnly ? 'readonly' : ''}>
                                     </div>
                                 </td>
                             `;
                         }
+                        
+                        // Lajur Average untuk map biasa
+                        let avgStr = count > 0 ? Math.round(sum/count).toLocaleString('en-US') : '-';
+                        runCols += `<td class="px-2 sm:px-4 py-4 text-center align-middle font-mono font-bold text-brand-400 text-sm sm:text-base bg-slate-800/30" id="avg_${map.id}">${avgStr}</td>`;
+
                         tableRows += `
                             <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition">
-                                <td class="px-4 sm:px-6 py-4 font-medium text-slate-200 border-r border-slate-700/50 w-1/4">${map.name}</td>
+                                <td class="px-4 sm:px-6 py-4 font-medium text-slate-200 border-r border-slate-700/50 w-1/5">${map.name}</td>
                                 ${runCols}
                             </tr>
                         `;
@@ -1266,7 +1335,7 @@
             });
 
             if (tableRows === '') {
-                tableRows = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">Belum ada map terdaftar di stage ini.</td></tr>`;
+                tableRows = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">Belum ada map terdaftar di stage ini.</td></tr>`;
             }
 
             // Dropdown untuk Semua Player & Admin
@@ -1323,10 +1392,12 @@
                             <table class="w-full text-left border-collapse min-w-[600px]">
                                 <thead class="bg-slate-900">
                                     <tr>
-                                        <th class="px-4 sm:px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-1/4 border-r border-slate-700">MAPPOOL</th>
-                                        <th class="px-2 sm:px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/4">RUN 1</th>
-                                        <th class="px-2 sm:px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/4">RUN 2</th>
-                                        <th class="px-2 sm:px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center w-1/4">RUN 3</th>
+                                        <!-- Lebar lajur dilaraskan kepada w-1/5 supaya seimbang -->
+                                        <th class="px-4 sm:px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-1/5 border-r border-slate-700">MAPPOOL</th>
+                                        <th class="px-2 sm:px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/5">RUN 1</th>
+                                        <th class="px-2 sm:px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/5">RUN 2</th>
+                                        <th class="px-2 sm:px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-slate-700 w-1/5">RUN 3</th>
+                                        <th class="px-2 sm:px-4 py-4 text-xs font-bold text-brand-400 uppercase tracking-wider text-center w-1/5">AVG</th>
                                     </tr>
                                 </thead>
                                 <tbody>
